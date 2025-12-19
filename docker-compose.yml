@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scheme.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=petmatch
+    ports:
+      - "5432:5432"
+    networks:
+      - petmatch-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - ./backend:/app
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=petmatch
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=supersecretkey
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - petmatch-network
+
+volumes:
+  postgres_data:
+
+networks:
+  petmatch-network:
+    driver: bridge
