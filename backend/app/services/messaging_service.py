@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_
-from app.domain.models import Message, Match, User, UserProfile, UserPreferences
+from app.domain.models import Message, Match, User, UserProfile, UserPreferences, Block
 from app.domain.schemas import MessageCreate, Match as MatchSchema
 from app.domain.events import event_bus
 from app.services.notification_service import notification_service
@@ -13,6 +13,16 @@ class MessagingService:
         
         # If match_id is not provided, try to find match by recipient_id
         if not match_id and message_in.recipient_id:
+            # Check for block before finding match
+            is_blocked = db.query(Block).filter(
+                or_(
+                    and_(Block.blocker_id == sender_id, Block.blocked_id == message_in.recipient_id),
+                    and_(Block.blocker_id == message_in.recipient_id, Block.blocked_id == sender_id)
+                )
+            ).first()
+            if is_blocked:
+                raise ValueError("Cannot send message: Blocked")
+
             match = db.query(Match).filter(
                 or_(
                     and_(Match.user1_id == sender_id, Match.user2_id == message_in.recipient_id),
@@ -42,6 +52,19 @@ class MessagingService:
         # Verify sender is part of the match
         if match.user1_id != sender_id and match.user2_id != sender_id:
             raise ValueError("User is not part of this match")
+        
+        recipient_id = match.user1_id if match.user2_id == sender_id else match.user2_id
+
+        # Check for block using match participants
+        is_blocked = db.query(Block).filter(
+            or_(
+                and_(Block.blocker_id == sender_id, Block.blocked_id == recipient_id),
+                and_(Block.blocker_id == recipient_id, Block.blocked_id == sender_id)
+            )
+        ).first()
+        
+        if is_blocked:
+             raise ValueError("Cannot send message: Blocked")
             
         # Create message
         db_message = Message(
@@ -111,6 +134,11 @@ class MessagingService:
 
     def get_user_matches(self, db: Session, user_id: int) -> List[Match]:
         """Get all active matches (chats) with latest message preview"""
+        
+        # Get blocked/blocker IDs
+        blocked_ids = db.query(Block.blocked_id).filter(Block.blocker_id == user_id).subquery()
+        blocker_ids = db.query(Block.blocker_id).filter(Block.blocked_id == user_id).subquery()
+
         # Eager load user details for UI
         matches = db.query(Match).options(
             joinedload(Match.user1).joinedload(User.profile),
@@ -119,7 +147,11 @@ class MessagingService:
             joinedload(Match.user2).joinedload(User.photos),
         ).filter(
             or_(Match.user1_id == user_id, Match.user2_id == user_id),
-            Match.is_active == True
+            Match.is_active == True,
+            Match.user1_id.notin_(blocked_ids),
+            Match.user1_id.notin_(blocker_ids),
+            Match.user2_id.notin_(blocked_ids),
+            Match.user2_id.notin_(blocker_ids)
         ).all()
         return matches
 
@@ -140,6 +172,16 @@ class MessagingService:
             target_user = db.query(User).filter(User.id == target_user_id).first()
             if not target_user:
                 raise ValueError("User not found")
+
+            # Check for block
+            is_blocked = db.query(Block).filter(
+                or_(
+                    and_(Block.blocker_id == user_id, Block.blocked_id == target_user_id),
+                    and_(Block.blocker_id == target_user_id, Block.blocked_id == user_id)
+                )
+            ).first()
+            if is_blocked:
+                raise ValueError("Cannot match: Blocked")
                 
             # Check if match exists
             match = db.query(Match).filter(
@@ -224,6 +266,17 @@ class MessagingService:
             raise ValueError("User not found")
         if target.id == user_id:
             raise ValueError("Cannot match with yourself")
+            
+        # Check for block
+        is_blocked = db.query(Block).filter(
+            or_(
+                and_(Block.blocker_id == user_id, Block.blocked_id == target.id),
+                and_(Block.blocker_id == target.id, Block.blocked_id == user_id)
+            )
+        ).first()
+        if is_blocked:
+            raise ValueError("Cannot match: Blocked")
+
         match = db.query(Match).filter(
             or_(
                 and_(Match.user1_id == user_id, Match.user2_id == target.id),

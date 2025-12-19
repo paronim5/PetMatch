@@ -1,8 +1,8 @@
 from typing import List, Protocol
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, and_, not_, desc
+from sqlalchemy import func, and_, not_, desc, or_
 from geoalchemy2.functions import ST_DWithin
-from app.domain.models import User, UserProfile, Swipe, UserPreferences, UserInterest
+from app.domain.models import User, UserProfile, Swipe, UserPreferences, UserInterest, Block
 from app.domain.enums import SwipeType, DealBreakerType, SmokingType, DrinkingType
 
 class MatchingStrategy(Protocol):
@@ -25,12 +25,18 @@ class LocationBasedMatching(MatchingStrategy):
         # Get IDs of users already swiped by this user
         swiped_ids = db.query(Swipe.swiped_id).filter(Swipe.swiper_id == user.id).subquery()
         
+        # Get IDs of users blocked by this user or who blocked this user
+        blocked_ids = db.query(Block.blocked_id).filter(Block.blocker_id == user.id).subquery()
+        blocker_ids = db.query(Block.blocker_id).filter(Block.blocked_id == user.id).subquery()
+        
         # 1. Find users who have Liked or Super Liked the current user (Prioritized)
         # We only want those who the current user hasn't swiped on yet
         liker_subquery = db.query(Swipe.swiper_id).filter(
             Swipe.swiped_id == user.id,
             Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like]),
-            Swipe.swiper_id.notin_(swiped_ids)
+            Swipe.swiper_id.notin_(swiped_ids),
+            Swipe.swiper_id.notin_(blocked_ids),
+            Swipe.swiper_id.notin_(blocker_ids)
         ).subquery()
 
         likers = db.query(User).options(
@@ -67,6 +73,8 @@ class LocationBasedMatching(MatchingStrategy):
                 User.id != user.id,
                 User.id.notin_(swiped_ids),
                 User.id.notin_(liker_subquery), # Exclude likers we already fetched
+                User.id.notin_(blocked_ids),    # Exclude users I blocked
+                User.id.notin_(blocker_ids),    # Exclude users who blocked me
                 ST_DWithin(
                     UserProfile.location,
                     user.profile.location,
