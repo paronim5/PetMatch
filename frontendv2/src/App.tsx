@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage';
 import MatchingPage from './pages/MatchingPage';
 import ChatPage from './pages/ChatPage';
 import SwipeHistoryPage from './pages/SwipeHistoryPage';
+import BlockHistoryPage from './pages/BlockHistoryPage';
 import { NotificationProvider } from './context/NotificationContext';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/matching" element={<MatchingPage />} />
           <Route path="/history" element={<SwipeHistoryPage />} />
+          <Route path="/blocks" element={<BlockHistoryPage />} />
           <Route path="/chat" element={<ChatPage />} />
         </Routes>
       </NotificationProvider>

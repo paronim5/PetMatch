@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userService } from '../services/user';
-import { FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical, FaGraduationCap, FaBriefcase, FaWineGlass, FaSmoking, FaHeart, FaSignOutAlt, FaUserTimes } from 'react-icons/fa';
+import { 
+  FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical, 
+  FaGraduationCap, FaBriefcase, FaWineGlass, FaSmoking, 
+  FaHeart, FaSignOutAlt, FaUserTimes, FaShieldAlt 
+} from 'react-icons/fa';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -608,7 +612,15 @@ const ProfilePage = () => {
         
         {/* Match Preferences */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6 border-b pb-2">Match Preferences</h3>
+          <div className="flex justify-between items-center mb-6 border-b pb-2">
+            <h3 className="text-lg font-medium text-gray-900">Match Preferences</h3>
+            <button
+              onClick={() => navigate('/blocks')}
+              className="text-gray-600 hover:text-rose-500 flex items-center gap-1 text-sm"
+            >
+              <FaShieldAlt /> Blocked Users
+            </button>
+          </div>
           <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">Minimum Age</label>

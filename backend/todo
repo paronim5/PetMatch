@@ -1,6 +1,4 @@
-google api
-
-notifications 
+google api 
 email verification
 subscription
     free tier sub 
@@ -9,8 +7,7 @@ subscription
 
 block users 
 report users 
-load user photo to cloud 
-who viewed your profile 
+load user photo to cloud  
 chat 
     chat icon change to user main profile picture 
     emojies on messages 
@@ -21,4 +18,4 @@ ai to check if user picture is an animal? after all
 ----
 deployment
 kafka 
-load balancer
+load balancer 

@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, Field, validator, ConfigDict
 from pydantic import model_validator
 from app.domain.enums import (
     GenderType, UserStatusType, RelationshipGoalType, SmokingType, DrinkingType,
-    HeightUnitType, LocationPrivacyType, DealBreakerType, SwipeType
+    HeightUnitType, LocationPrivacyType, DealBreakerType, SwipeType, ReportStatusType
 )
 
 class UserBase(BaseModel):
@@ -225,6 +225,45 @@ class SwipeWithUser(BaseModel):
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+# Block Schemas
+class BlockBase(BaseModel):
+    blocked_id: int
+    reason: Optional[str] = None
+
+class BlockCreate(BlockBase):
+    pass
+
+class Block(BlockBase):
+    id: int
+    blocker_id: int
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class BlockWithUser(Block):
+    blocked: Optional[UserPublic] = None
+
+# Report Schemas
+class ReportBase(BaseModel):
+    reported_id: int
+    reason: str = Field(..., max_length=100)
+    description: Optional[str] = None
+
+class ReportCreate(ReportBase):
+    pass
+
+class Report(ReportBase):
+    id: int
+    reporter_id: int
+    status: ReportStatusType
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class ReportWithUser(Report):
+    reported: Optional[UserPublic] = None
 
 # Update forward references
 User.model_rebuild()

@@ -38,5 +38,25 @@ export const userService = {
   registerPushToken: async (tokenVal: string) => {
     const token = localStorage.getItem('token');
     return api.post('/users/me/push-token', { token: tokenVal, device_type: 'web' }, token || undefined);
+  },
+  blockUser: async (blockedId: number, reason?: string) => {
+    const token = localStorage.getItem('token');
+    return api.post('/users/block', { blocked_id: blockedId, reason }, token || undefined);
+  },
+  reportUser: async (reportedId: number, reason: string, description?: string) => {
+    const token = localStorage.getItem('token');
+    return api.post('/users/report', { reported_id: reportedId, reason, description }, token || undefined);
+  },
+  getBlocks: async () => {
+    const token = localStorage.getItem('token');
+    return api.get('/users/blocks', token || undefined);
+  },
+  unblockUser: async (blockedId: number) => {
+    const token = localStorage.getItem('token');
+    return api.delete(`/users/blocks/${blockedId}`, token || undefined);
+  },
+  getReports: async () => {
+    const token = localStorage.getItem('token');
+    return api.get('/users/reports', token || undefined);
   }
 };

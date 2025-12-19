@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import List, Optional
+
 from sqlalchemy import (
-    Column, Integer, String, Boolean, DateTime, Date, ForeignKey, 
+    Column, Integer, String, Boolean, DateTime, Date, ForeignKey,
     Text, DECIMAL, Enum as SQLEnum, CheckConstraint, Index, UniqueConstraint
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, INET
 from sqlalchemy.orm import relationship
+
 from geoalchemy2 import Geography
 from geoalchemy2.shape import to_shape
 
@@ -15,6 +17,7 @@ from app.domain.enums import (
     UserStatusType, ReportStatusType, SubscriptionTierType, NotificationPriorityType,
     LocationPrivacyType, HeightUnitType, DealBreakerType
 )
+
 
 class User(Base):
     __tablename__ = "users"
@@ -37,15 +40,13 @@ class User(Base):
     photos = relationship("UserPhoto", back_populates="user", cascade="all, delete-orphan")
     preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
     subscription_details = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
-    
-    # Swipes made by this user
+
     swipes_made = relationship("Swipe", foreign_keys="[Swipe.swiper_id]", back_populates="swiper")
-    # Swipes on this user
     swipes_received = relationship("Swipe", foreign_keys="[Swipe.swiped_id]", back_populates="swiped")
-    
-    # Matches
+
     matches_as_user1 = relationship("Match", foreign_keys="[Match.user1_id]", back_populates="user1")
     matches_as_user2 = relationship("Match", foreign_keys="[Match.user2_id]", back_populates="user2")
+
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -98,6 +99,7 @@ class UserProfile(Base):
                 return None
         return None
 
+
 class UserPhoto(Base):
     __tablename__ = "user_photos"
 
@@ -111,6 +113,7 @@ class UserPhoto(Base):
 
     user = relationship("User", back_populates="photos")
 
+
 class Interest(Base):
     __tablename__ = "interests"
 
@@ -119,12 +122,15 @@ class Interest(Base):
     category = Column(String(50))
     locale = Column(String(10), default='en_US')
 
+
 class UserInterest(Base):
     __tablename__ = "user_interests"
+    __table_args__ = {'extend_existing': True}
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     interest_id = Column(Integer, ForeignKey("interests.id", ondelete="CASCADE"), primary_key=True)
     added_at = Column(DateTime, default=datetime.utcnow)
+
 
 class UserPreferences(Base):
     __tablename__ = "user_preferences"
@@ -134,29 +140,27 @@ class UserPreferences(Base):
     min_age = Column(Integer)
     max_age = Column(Integer)
     max_distance = Column(Integer)
-    
-    # FIX: Add name="gender_type" to match your SQL exactly
+
     preferred_genders = Column(
-        ARRAY(SQLEnum(GenderType, name="gender_type")), 
+        ARRAY(SQLEnum(GenderType, name="gender_type")),
         nullable=True
     )
-    
-    # FIX: Add name="deal_breaker_type" to match your SQL exactly
+
     deal_breakers = Column(
-        ARRAY(SQLEnum(DealBreakerType, name="deal_breaker_type")), 
+        ARRAY(SQLEnum(DealBreakerType, name="deal_breaker_type")),
         nullable=True
     )
-    
-    # Notification Settings
+
     notify_likes = Column(Boolean, default=True)
     notify_matches = Column(Boolean, default=True)
     notify_messages = Column(Boolean, default=True)
-    
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="preferences")
-    
+
+
 class TierLimits(Base):
     __tablename__ = "tier_limits"
 
@@ -170,6 +174,7 @@ class TierLimits(Base):
     rewind_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
@@ -189,8 +194,13 @@ class Subscription(Base):
 
     user = relationship("User", back_populates="subscription_details")
 
+
 class DailySwipeLimit(Base):
     __tablename__ = "daily_swipe_limits"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'date', name='idx_daily_swipe_limits_user_date'),
+        {'extend_existing': True}
+    )
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -198,10 +208,7 @@ class DailySwipeLimit(Base):
     swipe_count = Column(Integer, default=0)
     super_like_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    __table_args__ = (
-        UniqueConstraint('user_id', 'date', name='idx_daily_swipe_limits_user_date'),
-    )
+
 
 class Swipe(Base):
     __tablename__ = "swipes"
@@ -215,6 +222,7 @@ class Swipe(Base):
 
     swiper = relationship("User", foreign_keys=[swiper_id], back_populates="swipes_made")
     swiped = relationship("User", foreign_keys=[swiped_id], back_populates="swipes_received")
+
 
 class Match(Base):
     __tablename__ = "matches"
@@ -231,6 +239,7 @@ class Match(Base):
     user1 = relationship("User", foreign_keys=[user1_id], back_populates="matches_as_user1")
     user2 = relationship("User", foreign_keys=[user2_id], back_populates="matches_as_user2")
 
+
 class Message(Base):
     __tablename__ = "messages"
 
@@ -243,8 +252,14 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     deleted_at = Column(DateTime)
 
+
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        Index('idx_notifications_user_created', 'user_id', 'created_at'),
+        Index('idx_notifications_user_unread', 'user_id', 'is_read'),
+        {'extend_existing': True}
+    )
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -260,10 +275,6 @@ class Notification(Base):
     read_at = Column(DateTime)
     deleted_at = Column(DateTime)
 
-    __table_args__ = (
-        Index('idx_notifications_user_created', 'user_id', 'created_at'),
-        Index('idx_notifications_user_unread', 'user_id', 'is_read'),
-    )
 
 class ProfileView(Base):
     __tablename__ = "profile_views"
@@ -273,108 +284,58 @@ class ProfileView(Base):
     viewed_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     viewed_at = Column(DateTime, default=datetime.utcnow)
 
+
 class MessageReaction(Base):
     __tablename__ = "message_reactions"
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', 'reaction_emoji', name='idx_message_reactions_unique'),
+        {'extend_existing': True}
+    )
 
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     reaction_emoji = Column(String(10), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    __table_args__ = (
-        UniqueConstraint('message_id', 'user_id', 'reaction_emoji', name='idx_message_reactions_unique'),
-    )
+
 
 class MessageRead(Base):
     __tablename__ = "message_reads"
+    __table_args__ = (
+        UniqueConstraint('message_id', 'reader_id', name='idx_message_reads_unique'),
+        {'extend_existing': True}
+    )
 
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
     reader_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     read_at = Column(DateTime, default=datetime.utcnow)
-    
-    __table_args__ = (
-        UniqueConstraint('message_id', 'reader_id', name='idx_message_reads_unique'),
-    )
 
-class PushToken(Base):
-    __tablename__ = "push_tokens"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    device_token = Column(String(500), nullable=False)
-    device_type = Column(String(20), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    __table_args__ = (
-        UniqueConstraint('user_id', 'device_token', name='idx_push_tokens_unique'),
-    )
-
-class TypingIndicator(Base):
-    __tablename__ = "typing_indicators"
-
-    match_id = Column(Integer, ForeignKey("matches.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    started_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime)
-
-# class PushToken(Base):
-#     __tablename__ = "push_tokens"
-
-#     id = Column(Integer, primary_key=True)
-#     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-#     device_token = Column(String(500), nullable=False)
-#     device_type = Column(String(20), nullable=False)
-#     is_active = Column(Boolean, default=True)
-#     created_at = Column(DateTime, default=datetime.utcnow)
-#     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-#     __table_args__ = (
-#         UniqueConstraint('user_id', 'device_token', name='idx_push_tokens_unique'),
-#     )
-
-class IcebreakerPrompt(Base):
-    __tablename__ = "icebreaker_prompts"
-
-    id = Column(Integer, primary_key=True)
-    prompt_text = Column(Text, nullable=False)
-    category = Column(String(50))
-    locale = Column(String(10), default='en_US')
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class UserIcebreakerAnswer(Base):
-    __tablename__ = "user_icebreaker_answers"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    prompt_id = Column(Integer, ForeignKey("icebreaker_prompts.id"), nullable=False)
-    answer_text = Column(Text, nullable=False)
-    display_order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    __table_args__ = (
-        UniqueConstraint('user_id', 'prompt_id', name='idx_user_icebreaker_answers_unique'),
-    )
 
 class Block(Base):
     __tablename__ = "blocks"
+    __table_args__ = (
+        UniqueConstraint('blocker_id', 'blocked_id', name='blocks_blocker_id_blocked_id_key'),
+        CheckConstraint('blocker_id != blocked_id', name='no_self_block'),
+        {'extend_existing': True}
+    )
 
     id = Column(Integer, primary_key=True)
     blocker_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     blocked_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    __table_args__ = (
-        UniqueConstraint('blocker_id', 'blocked_id', name='idx_blocks_unique'),
-    )
+
+    blocker = relationship("User", foreign_keys=[blocker_id])
+    blocked = relationship("User", foreign_keys=[blocked_id])
+
 
 class Report(Base):
     __tablename__ = "reports"
+    __table_args__ = (
+        CheckConstraint('reporter_id != reported_id', name='no_self_report'),
+        {'extend_existing': True}
+    )
 
     id = Column(Integer, primary_key=True)
     reporter_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
@@ -387,6 +348,63 @@ class Report(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     resolved_at = Column(DateTime)
 
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    reported = relationship("User", foreign_keys=[reported_id])
+    resolver = relationship("User", foreign_keys=[resolver_id])
+
+
+class PushToken(Base):
+    __tablename__ = "push_tokens"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'device_token', name='idx_push_tokens_unique'),
+        {'extend_existing': True}
+    )
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    device_token = Column(String(500), nullable=False)
+    device_type = Column(String(20), nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class TypingIndicator(Base):
+    __tablename__ = "typing_indicators"
+    __table_args__ = {'extend_existing': True}
+
+    match_id = Column(Integer, ForeignKey("matches.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    started_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime)
+
+
+class IcebreakerPrompt(Base):
+    __tablename__ = "icebreaker_prompts"
+
+    id = Column(Integer, primary_key=True)
+    prompt_text = Column(Text, nullable=False)
+    category = Column(String(50))
+    locale = Column(String(10), default='en_US')
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserIcebreakerAnswer(Base):
+    __tablename__ = "user_icebreaker_answers"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'prompt_id', name='idx_user_icebreaker_answers_unique'),
+        {'extend_existing': True}
+    )
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    prompt_id = Column(Integer, ForeignKey("icebreaker_prompts.id"), nullable=False)
+    answer_text = Column(Text, nullable=False)
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class PhoneVerification(Base):
     __tablename__ = "phone_verifications"
 
@@ -398,6 +416,7 @@ class PhoneVerification(Base):
     is_verified = Column(Boolean, default=False)
     attempts = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
