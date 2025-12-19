@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import { authService } from '../services/auth';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -22,10 +23,28 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google login logic
-    console.log('Google login');
-  };
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (codeResponse) => {
+      try {
+        const data = await authService.googleLogin(codeResponse.code);
+        console.log('Google login successful:', data);
+        localStorage.setItem('token', data.access_token);
+        if (data.profile_incomplete) {
+            navigate('/complete-profile');
+        } else {
+            navigate('/matching');
+        }
+      } catch (error) {
+        console.error('Google login failed:', error);
+        alert('Google login failed: ' + (error.message || 'Unknown error'));
+      }
+    },
+    onError: (error) => {
+        console.error('Google login error:', error);
+        alert('Google login failed');
+    },
+    flow: 'auth-code',
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light">

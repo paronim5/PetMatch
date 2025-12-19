@@ -1,15 +1,13 @@
-google api 
+
 email verification
 subscription
     free tier sub 
     premium sub 
     daily swipe limit 
 
-block users 
-report users 
-load user photo to cloud  
+load user photo to cloud 
+ 
 chat 
-    chat icon change to user main profile picture 
     emojies on messages 
     message read
 
@@ -18,4 +16,15 @@ ai to check if user picture is an animal? after all
 ----
 deployment
 kafka 
-load balancer 
+load balancer
+
+done 
+---
+google api
+
+notifications 
+chat 
+    chat icon change to user main profile picture 
+
+block users 
+report users 

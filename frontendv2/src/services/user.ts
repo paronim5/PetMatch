@@ -33,7 +33,7 @@ export const userService = {
   },
   updatePreferences: async (prefs: unknown) => {
     const token = localStorage.getItem('token');
-    return api.put('/users/me/preferences', prefs, token || undefined);
+    return api.patch('/users/me/preferences', prefs, token || undefined);
   },
   registerPushToken: async (tokenVal: string) => {
     const token = localStorage.getItem('token');

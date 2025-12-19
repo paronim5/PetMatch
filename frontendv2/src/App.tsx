@@ -11,6 +11,7 @@ import MatchingPage from './pages/MatchingPage';
 import ChatPage from './pages/ChatPage';
 import SwipeHistoryPage from './pages/SwipeHistoryPage';
 import BlockHistoryPage from './pages/BlockHistoryPage';
+import CompleteProfilePage from './pages/CompleteProfilePage';
 import { NotificationProvider } from './context/NotificationContext';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/complete-profile" element={<CompleteProfilePage />} />
           <Route path="/project-goal" element={<ProjectGoal />} />
           <Route path="/technology" element={<Technology />} />
           <Route path="/features" element={<Features />} />

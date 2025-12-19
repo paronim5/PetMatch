@@ -2,7 +2,6 @@ import React, { createContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import Toast from '../components/Toast';
-import { requestForToken, onMessageListener } from '../utils/firebase';
 
 interface NotificationItem {
   id: number;

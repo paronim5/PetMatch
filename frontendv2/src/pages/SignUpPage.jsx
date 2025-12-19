@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { authService } from '../services/auth';
 import { userService } from '../services/user';
 
@@ -44,7 +45,35 @@ const SignUpPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [address, setAddress] = useState(null);
   const navigate = useNavigate();
+
+  const handleAddressSelect = (option) => {
+    setAddress(option);
+    if (option && window.google) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ placeId: option.value.place_id }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const lat = results[0].geometry.location.lat();
+          const lng = results[0].geometry.location.lng();
+          
+          const cityComponent = results[0].address_components.find(
+            component => component.types.includes('locality')
+          );
+          const city = cityComponent ? cityComponent.long_name : option.label;
+          
+          setFormData(prev => ({
+            ...prev,
+            location_city: city,
+            latitude: lat,
+            longitude: lng
+          }));
+        } else {
+          console.error('Geocode failed: ' + status);
+        }
+      });
+    }
+  };
 
   const validateField = (name, value, currentData) => {
     let error = null;
@@ -539,14 +568,38 @@ const SignUpPage = () => {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Location (City)</label>
-                <input
-                  type="text"
-                  name="location_city"
-                  value={formData.location_city}
-                  onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
-                  required
-                />
+                <div className="mt-1">
+                  <GooglePlacesAutocomplete
+                    apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                    selectProps={{
+                      value: address,
+                      onChange: handleAddressSelect,
+                      placeholder: 'Start typing your city...',
+                      styles: {
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          borderRadius: '0.375rem',
+                          boxShadow: 'none',
+                          '&:hover': {
+                            borderColor: '#e11d48'
+                          }
+                        }),
+                        input: (provided) => ({
+                          ...provided,
+                          color: '#374151'
+                        }),
+                        option: (provided, state) => ({
+                          ...provided,
+                          backgroundColor: state.isFocused ? '#fff1f2' : 'white',
+                          color: '#374151'
+                        })
+                      }
+                    }}
+                  />
+                </div>
+                {/* Hidden input to ensure required validation if needed, though we handle validation manually mostly */}
+                <input type="hidden" name="location_city" value={formData.location_city} />
               </div>
               <div className="bg-blue-50 p-4 rounded-lg space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -11,5 +11,8 @@ export const authService = {
     const payload: Record<string, unknown> = { email, password, phone_number };
     if (username) payload.username = username;
     return api.post('/users/', payload);
+  },
+  googleLogin: async (code: string) => {
+    return api.get(`/auth/google/callback?code=${code}`);
   }
 };
