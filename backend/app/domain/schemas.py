@@ -161,11 +161,30 @@ class MessageCreate(MessageBase):
     recipient_id: Optional[int] = None
     match_id: Optional[int] = None
 
+class MessageReactionBase(BaseModel):
+    reaction_emoji: str
+
+class MessageReaction(MessageReactionBase):
+    id: int
+    user_id: int
+    message_id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class MessageRead(BaseModel):
+    id: int
+    message_id: int
+    reader_id: int
+    read_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 class Message(MessageBase):
     id: int
     match_id: int
     sender_id: int
     created_at: datetime
+    reactions: List[MessageReaction] = []
+    reads: List[MessageRead] = []
 
     model_config = ConfigDict(from_attributes=True)
 

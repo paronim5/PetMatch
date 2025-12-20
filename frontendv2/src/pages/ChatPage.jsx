@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
-import { FaFlag, FaBan } from 'react-icons/fa';
+import { FaFlag, FaBan, FaSmile, FaCheck, FaCheckDouble, FaArrowLeft } from 'react-icons/fa';
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
 const ChatPage = () => {
   const [matches, setMatches] = useState([]);
@@ -21,8 +23,40 @@ const ChatPage = () => {
   // Block/Report State
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
 
   const getToken = () => localStorage.getItem('token');
+
+  const handleReact = async (messageId, emoji) => {
+      const token = getToken();
+      if (!token) return;
+      try {
+          const res = await fetch(`${API_URL}/chat/messages/${messageId}/react`, {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}` 
+              },
+              body: JSON.stringify({ emoji })
+          });
+          if (res.ok) {
+              const updatedMsg = await res.json();
+              setMessages(prev => prev.map(m => m.id === messageId ? updatedMsg : m));
+              setActiveReactionMessageId(null);
+          }
+      } catch (e) { console.error(e); }
+  };
+
+  const markRead = async (matchId) => {
+      const token = getToken();
+      if (!token) return;
+      try {
+          await fetch(`${API_URL}/chat/matches/${matchId}/read`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` }
+          });
+      } catch (e) { console.error(e); }
+  };
 
   // --- RESTORED/FIXED MISSING LOGIC ---
   const getPartnerUser = (match) => {
@@ -197,6 +231,8 @@ const ChatPage = () => {
     if (selectedMatch) {
         sessionStorage.setItem('lastSelectedMatchId', selectedMatch.id.toString());
         fetchMessages(selectedMatch.id);
+        markRead(selectedMatch.id); // Mark read on open
+
         const interval = setInterval(() => {
             const token = getToken();
             if(!token) return;
@@ -209,6 +245,12 @@ const ChatPage = () => {
                 setMessages(prev => {
                     if (JSON.stringify(prev) !== JSON.stringify(newMsgs)) {
                         if (isAutoScrollEnabled) setTimeout(scrollToBottom, 0);
+                        // Check if we need to mark read (if new messages from partner)
+                        const lastMsg = newMsgs[newMsgs.length - 1];
+                        if (lastMsg && lastMsg.sender_id !== currentUserId) {
+                             // Ideally check if unread, but blindly calling is safe
+                             markRead(selectedMatch.id);
+                        }
                         return newMsgs;
                     }
                     return prev;
@@ -218,7 +260,7 @@ const ChatPage = () => {
         }, 3000);
         return () => clearInterval(interval);
     }
-  }, [selectedMatch, isAutoScrollEnabled]);
+  }, [selectedMatch, isAutoScrollEnabled, currentUserId]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
@@ -229,9 +271,9 @@ const ChatPage = () => {
           <button onClick={() => navigate('/profile')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">Profile</button>
         </div>
       </div>
-      <div className="flex flex-1 pt-2">
+      <div className="flex flex-1 pt-2 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
+      <div className={`w-full md:w-1/3 bg-white border-r border-gray-200 flex flex-col ${selectedMatch ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Messages</h2>
             <form onSubmit={handleJoinChat} className="flex gap-2">
@@ -265,11 +307,14 @@ const ChatPage = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className={`flex-1 flex flex-col bg-gray-50 ${selectedMatch ? 'flex' : 'hidden md:flex'}`}>
         {selectedMatch ? (
             <>
                 <div className="p-4 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between">
                     <div className="flex items-center">
+                        <button onClick={() => setSelectedMatch(null)} className="mr-3 md:hidden text-gray-500 hover:text-rose-500">
+                            <FaArrowLeft size={20} />
+                        </button>
                         {(() => {
                             const partner = getPartnerDetails(selectedMatch);
                             return (
@@ -295,12 +340,47 @@ const ChatPage = () => {
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollContainerRef} onScroll={handleScroll}>
                     {messages.map((msg) => (
-                        <div key={msg.id} className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-xs px-4 py-2 rounded-lg ${msg.sender_id === currentUserId ? 'bg-rose-500 text-white' : 'bg-white text-gray-800 shadow-sm'}`}>
-                                <p>{msg.message_text}</p>
-                                <span className={`text-xs block mt-1 text-right ${msg.sender_id === currentUserId ? 'text-rose-100' : 'text-gray-400'}`}>
-                                    {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </span>
+                        <div key={msg.id} className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'} mb-4`}>
+                            <div className={`relative group max-w-xs`}>
+                                <div className={`px-4 py-2 rounded-lg ${msg.sender_id === currentUserId ? 'bg-rose-500 text-white' : 'bg-white text-gray-800 shadow-sm'}`}>
+                                    <p>{msg.message_text}</p>
+                                    <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${msg.sender_id === currentUserId ? 'text-rose-100' : 'text-gray-400'}`}>
+                                        <span>{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        {msg.sender_id === currentUserId && (
+                                            <span className="ml-1" title={msg.reads && msg.reads.length > 0 ? "Read" : "Sent"}>
+                                                {msg.reads && msg.reads.length > 0 ? <FaCheckDouble /> : <FaCheck />}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Reactions Display */}
+                                {msg.reactions && msg.reactions.length > 0 && (
+                                    <div className={`absolute -bottom-3 ${msg.sender_id === currentUserId ? 'right-0' : 'left-0'} bg-white rounded-full shadow-md px-2 py-0.5 flex gap-1 border border-gray-100 z-10 cursor-pointer`}>
+                                        {Object.entries(
+                                            msg.reactions.reduce((acc, r) => ({...acc, [r.reaction_emoji]: (acc[r.reaction_emoji] || 0) + 1}), {})
+                                        ).map(([emoji, count]) => (
+                                            <span key={emoji} className="text-xs hover:bg-gray-100 rounded px-1" onClick={() => handleReact(msg.id, emoji)}>{emoji} {count > 1 && count}</span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Reaction Picker Trigger */}
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setActiveReactionMessageId(activeReactionMessageId === msg.id ? null : msg.id); }}
+                                    className={`absolute top-1/2 -translate-y-1/2 ${msg.sender_id === currentUserId ? '-left-8' : '-right-8'} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-gray-400 hover:text-rose-500 p-1`}
+                                >
+                                    <FaSmile />
+                                </button>
+                                
+                                {/* Reaction Picker Popover */}
+                                {activeReactionMessageId === msg.id && (
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white shadow-xl rounded-full px-3 py-1.5 flex gap-2 z-20 border border-gray-100">
+                                        {REACTION_EMOJIS.map(emoji => (
+                                            <button key={emoji} onClick={() => handleReact(msg.id, emoji)} className="hover:scale-125 transition-transform text-lg leading-none">{emoji}</button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

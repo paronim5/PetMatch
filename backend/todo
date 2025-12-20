@@ -1,20 +1,13 @@
 
 email verification
-subscription
-    free tier sub 
-    premium sub 
-    daily swipe limit 
-
 load user photo to cloud 
- 
-chat 
-    emojies on messages 
-    message read
+
 
 ai to check if user picture is an animal? after all
 
 ----
 deployment
+---
 kafka 
 load balancer
 
@@ -28,3 +21,11 @@ chat
 
 block users 
 report users 
+subscription
+    free tier sub 
+    premium sub 
+    daily swipe limit 
+
+chat 
+    emojies on messages 
+    message read

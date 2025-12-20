@@ -252,6 +252,9 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     deleted_at = Column(DateTime)
 
+    reactions = relationship("MessageReaction", back_populates="message", cascade="all, delete-orphan")
+    reads = relationship("MessageRead", back_populates="message", cascade="all, delete-orphan")
+
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -294,9 +297,12 @@ class MessageReaction(Base):
 
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
+    message_created_at = Column(DateTime, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     reaction_emoji = Column(String(10), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    message = relationship("Message", back_populates="reactions")
 
 
 class MessageRead(Base):
@@ -308,8 +314,11 @@ class MessageRead(Base):
 
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
+    message_created_at = Column(DateTime, nullable=False)
     reader_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     read_at = Column(DateTime, default=datetime.utcnow)
+
+    message = relationship("Message", back_populates="reads")
 
 
 class Block(Base):

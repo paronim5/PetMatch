@@ -9,6 +9,7 @@ from app.infrastructure.repositories.user import user_repository
 from app.core.security import create_access_token
 from app.domain.models import User
 from app.domain.schemas import User as UserSchema
+from app.domain.enums import UserStatusType
 
 google_auth_service = GoogleAuthService()
 from app.domain.schemas import Token
@@ -54,6 +55,14 @@ def google_callback(code: str, db: Session = Depends(deps.get_db)):
         raise HTTPException(status_code=400, detail="Email not found in Google user info")
         
     user = user_repository.get_by_email(db, email=email)
+    if user:
+        if user.status == UserStatusType.deactivated:
+            raise HTTPException(status_code=403, detail="Account is deactivated")
+        if user.status == UserStatusType.banned:
+            raise HTTPException(status_code=403, detail="Account is banned")
+        if user.status == UserStatusType.suspended:
+            raise HTTPException(status_code=403, detail="Account is suspended")
+
     if not user:
         user = user_repository.create_social_user(db, email=email)
         

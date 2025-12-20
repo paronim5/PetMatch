@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { userService } from '../services/user';
+import { subscriptionService } from '../services/subscription';
 import { 
   FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical, 
   FaGraduationCap, FaBriefcase, FaWineGlass, FaSmoking, 
-  FaHeart, FaSignOutAlt, FaUserTimes, FaShieldAlt 
+  FaHeart, FaSignOutAlt, FaUserTimes, FaShieldAlt, FaCrown, FaPlay, FaVideo
 } from 'react-icons/fa';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
   const [photos, setPhotos] = useState([]);
+  const [subscription, setSubscription] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [adLoading, setAdLoading] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   
   const [profileData, setProfileData] = useState({
     first_name: '',
@@ -52,8 +57,68 @@ const ProfilePage = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    fetchUserAndPhotos();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    } else {
+      fetchUserAndPhotos();
+      fetchSubscription();
+    }
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setSuccessMessage('Subscription upgraded successfully!');
+      fetchSubscription();
+      setSearchParams({});
+    }
+    if (searchParams.get('canceled') === 'true') {
+      setFormError('Subscription upgrade canceled.');
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
+  const fetchSubscription = async () => {
+    try {
+      const status = await subscriptionService.getStatus();
+      setSubscription(status);
+    } catch (error) {
+      console.error("Failed to fetch subscription:", error);
+    }
+  };
+
+  const handleWatchAd = async () => {
+    setAdLoading(true);
+    try {
+      // Simulate ad delay (AdSense integration point)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      await subscriptionService.watchAd();
+      await fetchSubscription();
+      alert("You earned 5 extra swipes!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to watch ad");
+    } finally {
+      setAdLoading(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    setUpgradeLoading(true);
+    try {
+      const response = await subscriptionService.createCheckoutSession('premium');
+      if (response.checkout_url) {
+        window.location.href = response.checkout_url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Upgrade failed");
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
 
   const fetchUserAndPhotos = async () => {
     setLoading(true);
@@ -236,16 +301,74 @@ const ProfilePage = () => {
   if (loading) return <div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         
+        {/* Subscription Card */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <FaCrown className={subscription?.is_premium ? "text-yellow-500" : "text-gray-400"} />
+                Subscription Status
+              </h3>
+              <p className="text-gray-500 mt-1">
+                Current Plan: <span className="font-semibold capitalize text-gray-800">{subscription?.tier || 'Free'}</span>
+              </p>
+            </div>
+            <div className="text-left sm:text-right w-full sm:w-auto">
+               <p className="text-sm text-gray-500">Daily Swipes</p>
+               <p className="text-2xl font-bold text-rose-600">
+                 {subscription?.is_premium ? 'Unlimited' : `${subscription?.remaining_swipes ?? 0} / ${subscription?.daily_swipe_limit ?? 20}`}
+               </p>
+            </div>
+          </div>
+
+          {!subscription?.is_premium && (
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleUpgrade}
+                  disabled={upgradeLoading}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 text-white py-3 px-4 rounded-lg shadow-md hover:from-yellow-600 hover:to-amber-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {upgradeLoading ? <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span> : <FaCrown />}
+                  Upgrade to Premium
+                </button>
+
+                <button
+                  onClick={handleWatchAd}
+                  disabled={adLoading}
+                  className="flex-1 bg-gray-900 text-white py-3 px-4 rounded-lg shadow-md hover:bg-gray-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {adLoading ? <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span> : <FaPlay />}
+                  Watch Ad (+5 Swipes)
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 text-center">
+                Watch a short video ad to get 5 more swipes instantly. Google Play Billing integration is simulated.
+              </p>
+            </div>
+          )}
+          
+          {subscription?.is_premium && (
+             <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-100 text-yellow-800 flex items-center gap-3">
+               <FaCrown size={24} />
+               <div>
+                 <p className="font-bold">You are a Premium Member!</p>
+                 <p className="text-sm">Enjoy unlimited swipes and ad-free experience.</p>
+               </div>
+             </div>
+          )}
+        </div>
+
         {/* Profile Header */}
-        <div className="bg-white shadow rounded-lg p-6 flex justify-between items-center">
-          <div>
+        <div className="bg-white shadow rounded-lg p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="text-center sm:text-left w-full sm:w-auto">
             <h2 className="text-2xl font-bold text-gray-900">Your Profile</h2>
             <p className="text-gray-500">Manage your photos and personal details</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center sm:justify-end gap-3 w-full sm:w-auto">
             <button
               onClick={() => navigate('/matching')}
               className="bg-white py-2 px-4 border border-rose-300 rounded-md shadow-sm text-sm font-medium text-rose-700 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 flex items-center gap-2"
@@ -275,14 +398,14 @@ const ProfilePage = () => {
               }}
               className="bg-white py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center gap-2"
             >
-              <FaUserTimes /> Delete Account
+              <FaUserTimes /> Delete
             </button>
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="bg-rose-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
               >
-                Edit Profile
+                Edit
               </button>
             )}
           </div>
@@ -306,7 +429,7 @@ const ProfilePage = () => {
 
         {/* Photos Section */}
         <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                <FaCamera className="text-rose-500" /> Photos
              </h3>
@@ -612,7 +735,7 @@ const ProfilePage = () => {
         
         {/* Match Preferences */}
         <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6 border-b pb-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-2 gap-2">
             <h3 className="text-lg font-medium text-gray-900">Match Preferences</h3>
             <button
               onClick={() => navigate('/blocks')}

@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_
-from app.domain.models import Message, Match, User, UserProfile, UserPreferences, Block
+from app.domain.models import Message, Match, User, UserProfile, UserPreferences, Block, MessageReaction, MessageRead
 from app.domain.schemas import MessageCreate, Match as MatchSchema
 from app.domain.events import event_bus
 from app.services.notification_service import notification_service
@@ -128,9 +128,74 @@ class MessagingService:
         if match.user1_id != user_id and match.user2_id != user_id:
             raise ValueError("User is not part of this match")
             
-        return db.query(Message).filter(
+        return db.query(Message).options(
+            joinedload(Message.reactions),
+            joinedload(Message.reads)
+        ).filter(
             Message.match_id == match_id
         ).order_by(Message.created_at.desc()).limit(limit).offset(offset).all()
+
+    def react_to_message(self, db: Session, user_id: int, message_id: int, emoji: str) -> Message:
+        message = db.query(Message).filter(Message.id == message_id).first()
+        if not message:
+            raise ValueError("Message not found")
+            
+        # Verify user is part of the match
+        match = db.query(Match).filter(Match.id == message.match_id).first()
+        if not match or (match.user1_id != user_id and match.user2_id != user_id):
+            raise ValueError("Unauthorized")
+
+        # Check existing reaction
+        existing = db.query(MessageReaction).filter(
+            MessageReaction.message_id == message_id,
+            MessageReaction.user_id == user_id,
+            MessageReaction.reaction_emoji == emoji
+        ).first()
+
+        if existing:
+            db.delete(existing)
+        else:
+            reaction = MessageReaction(
+                message_id=message_id,
+                message_created_at=message.created_at,
+                user_id=user_id,
+                reaction_emoji=emoji
+            )
+            db.add(reaction)
+        
+        db.commit()
+        db.refresh(message)
+        return message
+
+    def mark_messages_as_read(self, db: Session, user_id: int, match_id: int):
+        match = db.query(Match).filter(Match.id == match_id).first()
+        if not match:
+            raise ValueError("Match not found")
+        
+        if match.user1_id != user_id and match.user2_id != user_id:
+            raise ValueError("Unauthorized")
+
+        # Find unread messages sent by the other user
+        # We want messages where match_id matches, sender_id != user_id
+        # AND there is NO MessageRead for this user_id
+        
+        unread_messages = db.query(Message).filter(
+            Message.match_id == match_id,
+            Message.sender_id != user_id,
+            ~Message.reads.any(MessageRead.reader_id == user_id)
+        ).all()
+
+        for msg in unread_messages:
+            read_entry = MessageRead(
+                message_id=msg.id,
+                message_created_at=msg.created_at,
+                reader_id=user_id
+            )
+            db.add(read_entry)
+        
+        if unread_messages:
+            db.commit()
+
 
     def get_user_matches(self, db: Session, user_id: int) -> List[Match]:
         """Get all active matches (chats) with latest message preview"""
@@ -307,4 +372,75 @@ class MessagingService:
         except Exception:
             pass
         return new_match
+
+    def add_reaction(self, db: Session, user_id: int, message_id: int, emoji: str) -> Message:
+        message = db.query(Message).filter(Message.id == message_id).first()
+        if not message:
+            raise ValueError("Message not found")
+        
+        # Verify user is part of the match
+        match = db.query(Match).filter(Match.id == message.match_id).first()
+        if not match or (match.user1_id != user_id and match.user2_id != user_id):
+            raise ValueError("Unauthorized")
+
+        # Check existing reaction
+        existing = db.query(MessageReaction).filter(
+            MessageReaction.message_id == message_id,
+            MessageReaction.user_id == user_id,
+            MessageReaction.reaction_emoji == emoji
+        ).first()
+
+        if existing:
+            # Toggle off if same emoji
+            db.delete(existing)
+        else:
+            # Create new reaction
+            reaction = MessageReaction(
+                message_id=message_id,
+                user_id=user_id,
+                reaction_emoji=emoji,
+                message_created_at=message.created_at
+            )
+            db.add(reaction)
+        
+        db.commit()
+        db.refresh(message)
+        return message
+
+    def mark_messages_read(self, db: Session, user_id: int, match_id: int) -> bool:
+        match = db.query(Match).filter(Match.id == match_id).first()
+        if not match:
+            raise ValueError("Match not found")
+        if match.user1_id != user_id and match.user2_id != user_id:
+            raise ValueError("Unauthorized")
+
+        # Find unread messages sent by the OTHER user
+        # We need messages where sender_id != user_id AND no MessageRead exists for this user
+        unread_messages = db.query(Message).outerjoin(
+            MessageRead, 
+            and_(
+                MessageRead.message_id == Message.id,
+                MessageRead.reader_id == user_id
+            )
+        ).filter(
+            Message.match_id == match_id,
+            Message.sender_id != user_id,
+            MessageRead.id == None
+        ).all()
+
+        if not unread_messages:
+            return False
+
+        for msg in unread_messages:
+            read_record = MessageRead(
+                message_id=msg.id,
+                reader_id=user_id,
+                message_created_at=msg.created_at,
+                read_at=datetime.utcnow()
+            )
+            db.add(read_record)
+        
+        db.commit()
+        return True
+
 messaging_service = MessagingService()

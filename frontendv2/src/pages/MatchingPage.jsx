@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
 import { matchingService } from '../services/matching';
+import { subscriptionService } from '../services/subscription';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
 import { 
   FaHeart, FaTimes, FaStar, FaUndo, FaBolt, FaUser, 
   FaRulerVertical, FaGraduationCap, FaBriefcase, FaWineGlass, 
-  FaSmoking, FaComments, FaHistory, FaFlag, FaBan 
+  FaSmoking, FaComments, FaHistory, FaFlag, FaBan, FaPlay, FaCrown
 } from 'react-icons/fa';
 
 const MatchingPage = () => {
@@ -15,6 +16,10 @@ const MatchingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [photoIndex, setPhotoIndex] = useState(0);
+
+  // Subscription State
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
 
   // Block/Report State
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -70,9 +75,17 @@ const MatchingPage = () => {
           setDragCurrent(null);
           setIsDragging(false);
         } catch (err) {
-          console.error('Swipe failed:', err);
-          setCurrentIndex(currentIndex + 1);
-          setSwipeDirection(null);
+          if (err.response && err.response.status === 403) {
+            setShowSubscriptionModal(true);
+            setSwipeDirection(null);
+            setDragStart(null);
+            setDragCurrent(null);
+            setIsDragging(false);
+          } else {
+            console.error('Swipe failed:', err);
+            setCurrentIndex(currentIndex + 1);
+            setSwipeDirection(null);
+          }
         }
       }, 300);
     }
@@ -108,6 +121,31 @@ const MatchingPage = () => {
       setDragStart(null);
       setDragCurrent(null);
       setIsDragging(false);
+    }
+  };
+
+  const handleWatchAd = async () => {
+    setAdLoading(true);
+    try {
+      // Simulate ad delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      await subscriptionService.watchAd();
+      setShowSubscriptionModal(false);
+      alert("You earned 5 extra swipes!");
+    } catch (error) {
+      alert("Failed to watch ad");
+    } finally {
+      setAdLoading(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      await subscriptionService.upgrade('premium');
+      setShowSubscriptionModal(false);
+      alert("Welcome to Premium! You now have unlimited swipes.");
+    } catch (error) {
+      alert("Upgrade failed");
     }
   };
 
@@ -303,6 +341,51 @@ const MatchingPage = () => {
         onReport={handleBlockReportSuccess}
         reportedUser={currentUser}
       />
+
+      {/* Subscription Limit Modal */}
+      {showSubscriptionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center animate-bounce-in">
+            <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaCrown size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Out of Swipes!</h2>
+            <p className="text-gray-600 mb-6">
+              You've reached your daily swipe limit. Watch an ad to get more swipes or upgrade for unlimited access.
+            </p>
+            
+            <div className="space-y-3">
+              <button 
+                onClick={handleWatchAd}
+                disabled={adLoading}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+              >
+                {adLoading ? (
+                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                ) : (
+                  <>
+                    <FaPlay size={16} /> Watch Ad (+5 Swipes)
+                  </>
+                )}
+              </button>
+              
+              <button 
+                onClick={handleUpgrade}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-colors shadow-lg shadow-rose-200"
+              >
+                <FaCrown size={16} /> Upgrade to Premium
+              </button>
+              
+              <button 
+                onClick={() => setShowSubscriptionModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-sm mt-4"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

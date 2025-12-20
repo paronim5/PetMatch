@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api import deps
 from app.domain.schemas import User, SwipeCreate, Swipe, SwipeWithUser
 from app.services.matching_service import matching_service
+from app.services.subscription_service import subscription_service
 from app.domain.models import Swipe as SwipeModel, Match, User as UserModel, UserProfile, UserPreferences
 from datetime import datetime
 from app.domain.enums import SwipeType
@@ -105,6 +106,10 @@ def create_swipe(
         if existing_swipe:
             # Idempotency: If swipe exists, return it (success) instead of error
             return existing_swipe
+
+        # Check subscription limits (only if new swipe)
+        # This will raise 403 if limit reached
+        subscription_service.check_and_increment_swipe(db, current_user)
 
         swipe = SwipeModel(
             swiper_id=current_user.id,

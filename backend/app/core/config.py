@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: Optional[str] = None
 
+    # Stripe
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    STRIPE_SUCCESS_URL: str = "http://localhost:5173/profile?success=true"
+    STRIPE_CANCEL_URL: str = "http://localhost:5173/profile?canceled=true"
+
     model_config = SettingsConfigDict(
         case_sensitive=True,
         env_file=".env"

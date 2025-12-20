@@ -23,7 +23,7 @@ from app.domain.models import (
 )
 from app.services.facade import user_facade
 from app.core.logging import logger
-from app.domain.enums import GenderType, DealBreakerType
+from app.domain.enums import GenderType, DealBreakerType, UserStatusType
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -75,6 +75,20 @@ def create_user(*, db: Session = Depends(deps.get_db), user_in: UserCreate) -> A
 @router.get("/me", response_model=User)
 def read_user_me(current_user: User = Depends(deps.get_current_active_user)) -> Any:
     return current_user
+
+@router.delete("/me")
+def delete_user_me(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Soft delete the current user.
+    """
+    current_user.status = "deactivated"
+    current_user.deleted_at = datetime.utcnow()
+    db.add(current_user)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/me/profile", response_model=UserProfile)
 def update_user_profile(
@@ -215,11 +229,11 @@ def block_user(*, db: Session = Depends(deps.get_db), block_in: BlockCreate, cur
 def read_blocks(skip: int = 0, limit: int = 100, db: Session = Depends(deps.get_db), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
     return db.query(BlockModel).options(joinedload(BlockModel.blocked)).filter(BlockModel.blocker_id == current_user.id).offset(skip).limit(limit).all()
 
-@router.delete("/blocks/{blocked_id}", status_code=204)
-def unblock_user(*, db: Session = Depends(deps.get_db), blocked_id: int, current_user: Any = Depends(deps.get_current_active_user)) -> None:
+@router.delete("/blocks/{blocked_id}")
+def unblock_user(*, db: Session = Depends(deps.get_db), blocked_id: int, current_user: Any = Depends(deps.get_current_active_user)) -> Response:
     block = db.query(BlockModel).filter(BlockModel.blocker_id == current_user.id, BlockModel.blocked_id == blocked_id).first()
     if not block: raise HTTPException(status_code=404, detail="Block record not found")
-    db.delete(block); db.commit(); return None
+    db.delete(block); db.commit(); return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.post("/report", response_model=Report)
 def report_user(*, db: Session = Depends(deps.get_db), report_in: ReportCreate, current_user: Any = Depends(deps.get_current_active_user)) -> Any:
