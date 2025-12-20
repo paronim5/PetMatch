@@ -1,1 +1,1 @@
-export const API_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8000/api/v1';
+export const API_URL = import.meta.env.DEV ? '/api' : '/api/v1';
