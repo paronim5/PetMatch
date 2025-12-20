@@ -1,0 +1,5 @@
+FROM postgis/postgis:15-3.3
+
+# Copy the initialization script to the docker-entrypoint-initdb.d directory.
+# This script will run on the first startup of the container.
+COPY scheme.sql /docker-entrypoint-initdb.d/init.sql

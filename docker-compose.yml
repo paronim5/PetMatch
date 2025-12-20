@@ -2,10 +2,11 @@ version: '3.8'
 
 services:
   db:
-    image: postgis/postgis:15-3.3
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/scheme.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
