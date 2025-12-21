@@ -70,15 +70,27 @@ const ProfilePage = () => {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
-      setSuccessMessage('Subscription upgraded successfully!');
-      fetchSubscription();
-      setSearchParams({});
-    }
-    if (searchParams.get('canceled') === 'true') {
-      setFormError('Subscription upgrade canceled.');
-      setSearchParams({});
-    }
+    const checkStatus = async () => {
+      if (searchParams.get('success') === 'true') {
+        const sessionId = searchParams.get('session_id');
+        if (sessionId) {
+          try {
+             // Verify session manually
+             await subscriptionService.verifySession(sessionId);
+          } catch (e) {
+             console.error("Verification failed", e);
+          }
+        }
+        setSuccessMessage('Subscription upgraded successfully!');
+        fetchSubscription();
+        setSearchParams({});
+      }
+      if (searchParams.get('canceled') === 'true') {
+        setFormError('Subscription upgrade canceled.');
+        setSearchParams({});
+      }
+    };
+    checkStatus();
   }, [searchParams, setSearchParams]);
 
   const fetchSubscription = async () => {

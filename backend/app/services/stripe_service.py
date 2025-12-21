@@ -91,7 +91,7 @@ class StripeService:
         # Handle the event
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
-            self._handle_checkout_session_completed(db, session)
+            self.handle_checkout_session_completed(db, session)
         elif event['type'] == 'invoice.payment_succeeded':
             # Handle recurring payment success if needed
             # For now we assume subscription is active until cancelled or payment fails
@@ -100,7 +100,7 @@ class StripeService:
             subscription = event['data']['object']
             self._handle_subscription_deleted(db, subscription)
             
-    def _handle_checkout_session_completed(self, db: Session, session):
+    def handle_checkout_session_completed(self, db: Session, session):
         user_id = session.get('client_reference_id')
         tier = session.get('metadata', {}).get('tier')
         subscription_id = session.get('subscription')
