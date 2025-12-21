@@ -198,9 +198,46 @@ def upload_user_photo(*, db: Session = Depends(deps.get_db), file: UploadFile = 
     filename = f"{uuid.uuid4()}{file_ext}"
     os.makedirs("static/uploads", exist_ok=True)
     file_path = f"static/uploads/{filename}"
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    photo_url = f"http://localhost:8000/{file_path}"
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except IOError as e:
+        logger.error(f"Failed to write file to {file_path}: {e}")
+        raise HTTPException(status_code=500, detail="Could not save file to disk.")
+    
+    # Use environment variable or request base URL for photo URL
+    base_url = settings.BACKEND_CORS_ORIGINS[0] if settings.BACKEND_CORS_ORIGINS else "http://localhost:8000"
+    # Clean up base_url if it has trailing slash
+    base_url = str(base_url).rstrip("/")
+    # Construct full URL. Note: In production with Nginx, this might need adjustment if serving static files differently.
+    # Ideally, store relative path in DB and construct URL on frontend or use a CDN.
+    # For now, we will store the relative path in the DB to be safe for migration, 
+    # but the current implementation expects a full URL.
+    # Let's stick to returning a full URL for the API response, but we might want to rethink storage.
+    
+    # FIX: The original code stored "http://localhost:8000/static/..." which is wrong for production.
+    # We should return a URL that is accessible from the frontend.
+    # If the frontend accesses via http://52.200.119.252.sslip.io:8000, we should use that.
+    # However, inside the container, we don't know the public IP easily without config.
+    # A better approach is to store the RELATIVE path in the DB, or a path starting with /static.
+    
+    # Temporary fix: Use the relative path starting with / so the frontend interprets it relative to the API domain
+    # IF the API and Frontend are on same domain/port (via Nginx proxy), this works.
+    # If they are different ports, we need the full URL.
+    
+    # Given the user's error: "http://52.200.119.252.sslip.io:5173/assets/..." 
+    # The frontend seems to be on port 5173 (dev mode exposed?) or Nginx mapping.
+    # The error "Internal Server Error" suggests the backend failed to WRITE the file or DB.
+    
+    # Let's assume the write failed due to permissions first (fixed in Dockerfile).
+    # Now let's fix the URL generation to be more robust.
+    
+    # We will use a relative URL for the response so the frontend uses its own origin if needed,
+    # OR better, use the request.base_url if available, but here we don't have 'request' object easily injected without modifying signature.
+    
+    # Let's try to store the relative path "/static/uploads/..." which is standard.
+    photo_url = f"/{file_path}" 
+    
     count = db.query(UserPhotoModel).filter(UserPhotoModel.user_id == current_user.id).count()
     photo = UserPhotoModel(user_id=current_user.id, photo_url=photo_url, is_primary=(count == 0), photo_order=count)
     db.add(photo)

@@ -47,6 +47,11 @@ RUN pip install --no-cache /wheels/*
 # Copy application code
 COPY . .
 
+# Create static directory and set permissions
+RUN mkdir -p static/uploads && \
+    chown -R app:app static && \
+    chmod -R 755 static
+
 # Create a non-root user and fix permissions
 RUN addgroup --system app && adduser --system --group app
 RUN chown -R app:app /app

@@ -474,11 +474,15 @@ const ProfilePage = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {photos.map((photo) => (
               <div key={photo.id} className="relative group aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden">
-                <img 
-                  src={photo.photo_url} 
-                  alt="User photo" 
+                <img
+                  src={photo.photo_url || 'https://via.placeholder.com/150'}
+                  alt="Profile"
                   className="object-cover w-full h-40"
-                  onError={(e) => {e.target.src = 'https://via.placeholder.com/150?text=Error'}} 
+                  onError={(e) => {
+                    // Try to load a local placeholder if external fails, or just hide it
+                    e.target.src = '/vite.svg'; // Fallback to a local asset we know exists
+                    e.target.onerror = null; // Prevent infinite loop
+                  }} 
                 />
                 <button
                   onClick={() => handleDeletePhoto(photo.id)}
