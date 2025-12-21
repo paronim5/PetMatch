@@ -216,7 +216,7 @@ class Swipe(Base):
     id = Column(Integer, primary_key=True)
     swiper_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     swiped_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    swipe_type = Column(SQLEnum(SwipeType), nullable=False)
+    swipe_type = Column(SQLEnum('like', 'pass', 'super_like', name='swipe_type'), nullable=False)
     expires_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 

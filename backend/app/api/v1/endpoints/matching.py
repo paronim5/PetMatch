@@ -114,7 +114,7 @@ def create_swipe(
         swipe = SwipeModel(
             swiper_id=current_user.id,
             swiped_id=swipe_in.swiped_id,
-            swipe_type=swipe_in.swipe_type,
+            swipe_type=swipe_in.swipe_type.value,
             created_at=datetime.utcnow()
         )
         db.add(swipe)
