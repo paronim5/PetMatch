@@ -15,8 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install python dependencies
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels gunicorn
+
+# FIX: Added oauthlib and requests-oauthlib directly here
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels \
+    -r requirements.txt \
+    oauthlib \
+    requests-oauthlib \
+    gunicorn \
+    uvicorn
 
 # Final stage
 FROM python:3.11-slim
@@ -41,12 +47,11 @@ RUN pip install --no-cache /wheels/*
 # Copy application code
 COPY . .
 
-# Create a non-root user for security
+# Create a non-root user and fix permissions
 RUN addgroup --system app && adduser --system --group app
 RUN chown -R app:app /app
 USER app
 
 EXPOSE 8000
 
-# Run with Gunicorn
 CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
