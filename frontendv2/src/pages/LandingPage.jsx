@@ -241,16 +241,16 @@ const LandingPage = () => {
     <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} />
 
     {/* Header */}
-    <header className="absolute top-0 right-0 p-6 z-30">
+    <header className="absolute top-0 right-0 p-4 md:p-6 z-30">
       <div className="flex space-x-3">
        <button 
-         className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors shadow-lg"
+         className="bg-rose-500 text-white px-6 py-3 rounded-lg hover:bg-rose-600 transition-colors shadow-lg min-h-[48px]"
          onClick={() => navigate('/signup')}
        >
          Sign Up
        </button>
        <button 
-         className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors shadow-lg"
+         className="bg-rose-500 text-white px-6 py-3 rounded-lg hover:bg-rose-600 transition-colors shadow-lg min-h-[48px]"
          onClick={() => navigate('/login')}
        >
          Login

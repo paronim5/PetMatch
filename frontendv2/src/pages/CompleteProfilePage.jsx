@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { api } from '../services/api';
 import { userService } from '../services/user';
+import { validateImage } from '../utils/imageValidation';
 
 const CompleteProfilePage = () => {
   const [formData, setFormData] = useState({
@@ -100,7 +101,7 @@ const CompleteProfilePage = () => {
       if (profilePhotoFile) {
         const isValid = await validateImage(profilePhotoFile);
         if (!isValid.ok) {
-            alert(isValid.message);
+            setPhotoError(isValid.message);
             return;
         }
         await userService.uploadPhoto(profilePhotoFile);
@@ -225,11 +226,18 @@ const CompleteProfilePage = () => {
              <div>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={(e) => {
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={async (e) => {
                     const file = e.target.files?.[0] || null;
                     setProfilePhotoFile(file);
                     setPhotoError('');
+                    
+                    if (file) {
+                      const isValid = await validateImage(file);
+                      if (!isValid.ok) {
+                        setPhotoError(isValid.message);
+                      }
+                    }
                   }}
                   className="mt-1 block w-full text-sm"
                 />
@@ -507,29 +515,5 @@ const CompleteProfilePage = () => {
 
 export default CompleteProfilePage;
 
-async function validateImage(file) {
-  const allowedTypes = ['image/jpeg', 'image/png'];
-  const maxSize = 5 * 1024 * 1024;
-  const minDim = 300;
-  const maxDim = 4000;
-  if (!allowedTypes.includes(file.type)) {
-    return { ok: false, message: 'Unsupported file type. Only JPG and PNG are allowed.' };
-  }
-  if (file.size > maxSize) {
-    return { ok: false, message: 'File too large. Max size is 5MB.' };
-  }
-  const dims = await new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ width: img.width, height: img.height });
-    img.onerror = () => resolve(null);
-    img.src = URL.createObjectURL(file);
-  });
-  if (!dims) return { ok: false, message: 'Invalid image file.' };
-  if (dims.width < minDim || dims.height < minDim) {
-    return { ok: false, message: `Image too small. Minimum dimensions are ${minDim}x${minDim}.` };
-  }
-  if (dims.width > maxDim || dims.height > maxDim) {
-    return { ok: false, message: `Image too large. Maximum dimensions are ${maxDim}x${maxDim}.` };
-  }
-  return { ok: true };
-}
+
+

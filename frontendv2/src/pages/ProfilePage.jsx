@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { userService } from '../services/user';
 import { subscriptionService } from '../services/subscription';
+import { validateImage } from '../utils/imageValidation';
 import { 
   FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical, 
   FaGraduationCap, FaBriefcase, FaWineGlass, FaSmoking, 
@@ -54,6 +55,7 @@ const ProfilePage = () => {
   });
   const [formError, setFormError] = useState('');
   const [prefsError, setPrefsError] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -252,9 +254,15 @@ const ProfilePage = () => {
     }
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
+    setUploadError('');
     if (file) {
+      const isValid = await validateImage(file);
+      if (!isValid.ok) {
+        setUploadError(isValid.message);
+        return;
+      }
       setNewPhotoFile(file);
       setNewPhotoPreview(URL.createObjectURL(file));
     }
@@ -311,11 +319,11 @@ const ProfilePage = () => {
   if (loading) return <div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-gray-50 py-4 px-3 md:py-12 md:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-4 md:space-y-8">
         
         {/* Subscription Card */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow rounded-lg p-4 md:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
               <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -438,7 +446,7 @@ const ProfilePage = () => {
         )}
 
         {/* Photos Section */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow rounded-lg p-4 md:p-6">
           <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                <FaCamera className="text-rose-500" /> Photos
@@ -453,25 +461,28 @@ const ProfilePage = () => {
 
           {showPhotoInput && (
             <form onSubmit={handleUploadPhoto} className="mb-6 space-y-4">
-              <div className="flex gap-2 items-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-rose-50 file:text-rose-700
-                    hover:file:bg-rose-100"
-                />
-                <button
-                  type="submit"
-                  disabled={!newPhotoFile}
-                  className="bg-rose-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-                >
-                  Upload
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-rose-50 file:text-rose-700
+                      hover:file:bg-rose-100"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newPhotoFile}
+                    className="bg-rose-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                  >
+                    Upload
+                  </button>
+                </div>
+                {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
               </div>
               {newPhotoPreview && (
                 <div className="w-32 h-32 relative rounded-lg overflow-hidden border border-gray-300">

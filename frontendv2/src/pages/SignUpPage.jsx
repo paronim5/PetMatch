@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { authService } from '../services/auth';
 import { userService } from '../services/user';
+import { validateImage } from '../utils/imageValidation';
 
 const SignUpPage = () => {
   const [step, setStep] = useState(1);
@@ -208,28 +209,51 @@ const SignUpPage = () => {
     const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
     // Validate photo
     if (!profilePhotoFile) {
+      setPhotoError('Please upload a profile picture');
       setErrorMessage('Please upload a profile picture');
       return;
     }
     const isValid = await validateImage(profilePhotoFile);
     if (!isValid.ok) {
+      setPhotoError(isValid.message);
       setErrorMessage(isValid.message);
       return;
     }
 
     setLoading(true);
     try {
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] Starting registration process...`);
+      
       // 1. Register User
+      console.log(`[${timestamp}] Step 1: Registering user...`);
+      console.log(`[${timestamp}] details: email=${formData.email}, username=${formData.username}, phone=${phoneE164}`);
+      
       await authService.register(formData.email, formData.password, phoneE164, formData.username || undefined);
+      console.log(`[${new Date().toISOString()}] Step 1: User registered successfully.`);
       
       // 2. Auto Login
+      console.log(`[${new Date().toISOString()}] Step 2: Auto-logging in with email=${formData.email}...`);
       const loginData = await authService.login(formData.email, formData.password);
       localStorage.setItem('token', loginData.access_token);
+      console.log(`[${new Date().toISOString()}] Step 2: Login successful, token stored.`);
 
       // 2a. Upload Profile Photo
-      await userService.uploadPhoto(profilePhotoFile);
+      if (profilePhotoFile) {
+        console.log(`[${new Date().toISOString()}] Step 2a: Uploading profile photo... Name: ${profilePhotoFile.name}, Size: ${profilePhotoFile.size} bytes, Type: ${profilePhotoFile.type}`);
+        try {
+            const photoResult = await userService.uploadPhoto(profilePhotoFile);
+            console.log(`[${new Date().toISOString()}] Step 2a: Photo uploaded successfully:`, photoResult);
+        } catch (photoErr) {
+            console.error(`[${new Date().toISOString()}] Step 2a: Photo upload failed details:`, photoErr);
+            throw new Error(`Photo upload failed: ${photoErr.message}`);
+        }
+      } else {
+        console.log(`[${new Date().toISOString()}] Step 2a: No profile photo to upload.`);
+      }
 
       // 3. Update Profile
+      console.log(`[${new Date().toISOString()}] Step 3: Updating profile details...`);
       // Append interests to bio for now
       let finalBio = formData.bio;
       if (formData.interests) {
@@ -254,21 +278,33 @@ const SignUpPage = () => {
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null
       };
+      console.log(`[${new Date().toISOString()}] Profile data payload:`, profileData);
+      
       await userService.updateProfile(profileData);
+      console.log(`[${new Date().toISOString()}] Step 3: Profile updated successfully.`);
       
       // 3b. Set Preferences
-      await userService.updatePreferences({
+      console.log(`[${new Date().toISOString()}] Step 3b: Updating preferences...`);
+      const prefData = {
         min_age: formData.min_age,
         max_age: formData.max_age,
         max_distance: formData.max_distance,
         preferred_genders: formData.preferred_genders
-      });
+      };
+      console.log(`[${new Date().toISOString()}] Preferences payload:`, prefData);
+      
+      await userService.updatePreferences(prefData);
+      console.log(`[${new Date().toISOString()}] Step 3b: Preferences updated successfully.`);
 
       // 4. Redirect
+      console.log(`[${new Date().toISOString()}] Step 4: Registration complete. Redirecting to /matching...`);
       setSuccessMessage('Registration successful! Welcome to PetMatch.');
       navigate('/matching');
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error(`[${new Date().toISOString()}] Registration failed. Full error object:`, error);
+      if (error.stack) {
+        console.error(`[${new Date().toISOString()}] Error stack:`, error.stack);
+      }
       let errorMessage = error.message;
       if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
@@ -287,8 +323,8 @@ const SignUpPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light p-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold text-center text-rose-dark mb-6">
+      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h2 className="text-xl md:text-2xl font-bold text-center text-rose-dark mb-6">
           {step === 1 && "Create Account"}
           {step === 2 && "Tell us about yourself"}
           {step === 3 && "Lifestyle & Work"}
@@ -638,11 +674,18 @@ const SignUpPage = () => {
                 <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={(e) => {
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={async (e) => {
                     const file = e.target.files?.[0] || null;
                     setProfilePhotoFile(file);
                     setPhotoError('');
+                    
+                    if (file) {
+                      const isValid = await validateImage(file);
+                      if (!isValid.ok) {
+                        setPhotoError(isValid.message);
+                      }
+                    }
                   }}
                   className="mt-1 block w-full text-sm"
                   required
@@ -762,29 +805,4 @@ const SignUpPage = () => {
 
 export default SignUpPage;
 
-async function validateImage(file) {
-  const allowedTypes = ['image/jpeg', 'image/png'];
-  const maxSize = 5 * 1024 * 1024;
-  const minDim = 300;
-  const maxDim = 4000;
-  if (!allowedTypes.includes(file.type)) {
-    return { ok: false, message: 'Unsupported file type. Only JPG and PNG are allowed.' };
-  }
-  if (file.size > maxSize) {
-    return { ok: false, message: 'File too large. Max size is 5MB.' };
-  }
-  const dims = await new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ width: img.width, height: img.height });
-    img.onerror = () => resolve(null);
-    img.src = URL.createObjectURL(file);
-  });
-  if (!dims) return { ok: false, message: 'Invalid image file.' };
-  if (dims.width < minDim || dims.height < minDim) {
-    return { ok: false, message: `Image too small. Minimum dimensions are ${minDim}x${minDim}.` };
-  }
-  if (dims.width > maxDim || dims.height > maxDim) {
-    return { ok: false, message: `Image too large. Maximum dimensions are ${maxDim}x${maxDim}.` };
-  }
-  return { ok: true };
-}
+

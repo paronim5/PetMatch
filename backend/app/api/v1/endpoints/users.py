@@ -4,6 +4,7 @@ import os
 import uuid
 import io
 from datetime import datetime
+import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, status, Response, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
@@ -11,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func 
 
 from app.api import deps
+from app.core.config import settings
 from app.domain.schemas import (
     User, UserCreate, UserUpdate, UserProfile, UserProfileUpdate, 
     UserPreferences, UserPreferencesUpdate, UserPhoto, UserPhotoCreate,
@@ -67,8 +69,11 @@ def register_push_token(
 @router.post("/", response_model=User)
 def create_user(*, db: Session = Depends(deps.get_db), user_in: UserCreate) -> Any:
     try:
+        logger.info(f"Registering new user: {user_in.email}, Username: {user_in.username}")
         user = user_facade.register_new_user(db, user_in=user_in)
+        logger.info(f"User registered successfully: {user.email} (ID: {user.id})")
     except ValueError as e:
+        logger.error(f"Registration failed for {user_in.email}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     return user
 
@@ -84,6 +89,7 @@ def delete_user_me(
     """
     Soft delete the current user.
     """
+    logger.info(f"Deactivating user: {current_user.email} (ID: {current_user.id})")
     current_user.status = "deactivated"
     current_user.deleted_at = datetime.utcnow()
     db.add(current_user)
@@ -97,16 +103,19 @@ def update_user_profile(
     profile_in: UserProfileUpdate,
     current_user: Any = Depends(deps.get_current_active_user),
 ) -> Any:
+    logger.info(f"Updating profile for user: {current_user.email} (ID: {current_user.id})")
     profile_data = profile_in.model_dump(exclude_unset=True)
     latitude = profile_data.pop("latitude", None)
     longitude = profile_data.pop("longitude", None)
     
     if not current_user.profile:
+        logger.info(f"Creating new profile record for user {current_user.id}")
         db_profile = UserProfileModel(**profile_data, user_id=current_user.id)
         if latitude is not None and longitude is not None:
              db_profile.location = func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326)
         db.add(db_profile)
     else:
+        logger.info(f"Updating existing profile record for user {current_user.id}")
         for field, value in profile_data.items():
             setattr(current_user.profile, field, value)
         if latitude is not None and longitude is not None:
@@ -114,6 +123,7 @@ def update_user_profile(
         db.add(current_user.profile)
     db.commit()
     db.refresh(current_user.profile)
+    logger.info(f"Profile updated successfully for user {current_user.id}")
     return current_user.profile
 
 # --- PREFERENCES ENDPOINTS (ADDED BACK) ---
@@ -187,63 +197,65 @@ def read_user_photos(db: Session = Depends(deps.get_db), current_user: Any = Dep
 
 @router.post("/me/photos/upload", response_model=UserPhoto)
 def upload_user_photo(*, db: Session = Depends(deps.get_db), file: UploadFile = File(...), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
-    allowed_types = {"image/jpeg", "image/png"}
-    if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Only JPG and PNG are allowed.")
-    file_bytes = file.file.read()
-    if len(file_bytes) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (Max 5MB).")
-    file.file.seek(0)
-    file_ext = os.path.splitext(file.filename)[1]
-    filename = f"{uuid.uuid4()}{file_ext}"
-    os.makedirs("static/uploads", exist_ok=True)
-    file_path = f"static/uploads/{filename}"
+    logger.info(f"Starting photo upload for user {current_user.id}")
     try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except IOError as e:
-        logger.error(f"Failed to write file to {file_path}: {e}")
-        raise HTTPException(status_code=500, detail="Could not save file to disk.")
-    
-    # Use environment variable or request base URL for photo URL
-    base_url = settings.BACKEND_CORS_ORIGINS[0] if settings.BACKEND_CORS_ORIGINS else "http://localhost:8000"
-    # Clean up base_url if it has trailing slash
-    base_url = str(base_url).rstrip("/")
-    # Construct full URL. Note: In production with Nginx, this might need adjustment if serving static files differently.
-    # Ideally, store relative path in DB and construct URL on frontend or use a CDN.
-    # For now, we will store the relative path in the DB to be safe for migration, 
-    # but the current implementation expects a full URL.
-    # Let's stick to returning a full URL for the API response, but we might want to rethink storage.
-    
-    # FIX: The original code stored "http://localhost:8000/static/..." which is wrong for production.
-    # We should return a URL that is accessible from the frontend.
-    # If the frontend accesses via http://52.200.119.252.sslip.io:8000, we should use that.
-    # However, inside the container, we don't know the public IP easily without config.
-    # A better approach is to store the RELATIVE path in the DB, or a path starting with /static.
-    
-    # Temporary fix: Use the relative path starting with / so the frontend interprets it relative to the API domain
-    # IF the API and Frontend are on same domain/port (via Nginx proxy), this works.
-    # If they are different ports, we need the full URL.
-    
-    # Given the user's error: "http://52.200.119.252.sslip.io:5173/assets/..." 
-    # The frontend seems to be on port 5173 (dev mode exposed?) or Nginx mapping.
-    # The error "Internal Server Error" suggests the backend failed to WRITE the file or DB.
-    
-    # Let's assume the write failed due to permissions first (fixed in Dockerfile).
-    # Now let's fix the URL generation to be more robust.
-    
-    # We will use a relative URL for the response so the frontend uses its own origin if needed,
-    # OR better, use the request.base_url if available, but here we don't have 'request' object easily injected without modifying signature.
-    
-    # Let's try to store the relative path "/static/uploads/..." which is standard.
-    photo_url = f"/{file_path}" 
-    
-    count = db.query(UserPhotoModel).filter(UserPhotoModel.user_id == current_user.id).count()
-    photo = UserPhotoModel(user_id=current_user.id, photo_url=photo_url, is_primary=(count == 0), photo_order=count)
-    db.add(photo)
-    db.commit()
-    db.refresh(photo)
-    return photo
+        allowed_types = {"image/jpeg", "image/png", "image/webp"}
+        if file.content_type not in allowed_types:
+            logger.warning(f"Invalid file type: {file.content_type}")
+            raise HTTPException(status_code=400, detail=f"Invalid file type: {file.content_type}. Allowed: JPG, PNG, WebP")
+        
+        file_bytes = file.file.read()
+        file_size = len(file_bytes)
+        logger.info(f"File size: {file_size} bytes")
+        
+        if file_size > 5 * 1024 * 1024:
+            logger.warning("File too large")
+            raise HTTPException(status_code=400, detail="File too large (Max 5MB).")
+        
+        file.file.seek(0)
+        file_ext = os.path.splitext(file.filename)[1]
+        filename = f"{uuid.uuid4()}{file_ext}"
+        
+        # Ensure static/uploads exists
+        upload_dir = "static/uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_path = f"{upload_dir}/{filename}"
+        logger.info(f"Saving file to {file_path}")
+        
+        try:
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+        except IOError as e:
+            logger.error(f"Failed to write file to {file_path}: {e}")
+            raise HTTPException(status_code=500, detail="Could not save file to disk.")
+        
+        # Generate URL
+        # We'll use a relative path that starts with /static so the frontend can prepend the API base URL if needed,
+        # or it works if served from the same origin.
+        # Ideally, we should construct a full URL if we know the public domain.
+        # But `settings.BACKEND_CORS_ORIGINS` is a list, and might not be the actual public URL.
+        # Let's keep it relative for flexibility, or try to be smart.
+        
+        # FIX: The original code used settings.BACKEND_CORS_ORIGINS[0] which caused the crash if settings wasn't imported.
+        # We will use a safe default if settings are not configured or empty.
+        
+        photo_url = f"/static/uploads/{filename}"
+        logger.info(f"Photo saved successfully. URL: {photo_url}")
+        
+        count = db.query(UserPhotoModel).filter(UserPhotoModel.user_id == current_user.id).count()
+        photo = UserPhotoModel(user_id=current_user.id, photo_url=photo_url, is_primary=(count == 0), photo_order=count)
+        db.add(photo)
+        db.commit()
+        db.refresh(photo)
+        return photo
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Unexpected error in upload_user_photo: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.delete("/me/photos/{photo_id}")
 def delete_user_photo(*, db: Session = Depends(deps.get_db), photo_id: int, current_user: Any = Depends(deps.get_current_active_user)) -> Any:

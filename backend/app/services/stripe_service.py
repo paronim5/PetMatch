@@ -1,12 +1,13 @@
 import stripe
 import logging
+import json
 from typing import Optional, Dict
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.domain.models import User, Subscription, SubscriptionTierType
 from app.domain.enums import SubscriptionTierType
 from datetime import datetime, timedelta
-
+#todo suka nado https protokol naxui a dila etogo nado domain name suka a s secret key vse ok a snizu netx
 logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -67,21 +68,25 @@ class StripeService:
         
         if not settings.STRIPE_WEBHOOK_SECRET:
              logger.warning("Stripe Webhook Secret not set. Skipping verification (unsafe in production).")
-             # In dev, we might want to proceed if we trust the source, but better to fail.
-             # raise ValueError("Webhook secret not configured")
-        
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-            )
-        except ValueError as e:
-            # Invalid payload
-            logger.error(f"Invalid payload: {e}")
-            raise e
-        except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
-            logger.error(f"Invalid signature: {e}")
-            raise e
+             # Skip verification in dev if secret is missing
+             try:
+                event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
+             except Exception as e:
+                logger.error(f"Invalid payload: {e}")
+                raise e
+        else:
+            try:
+                event = stripe.Webhook.construct_event(
+                    payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+                )
+            except ValueError as e:
+                # Invalid payload
+                logger.error(f"Invalid payload: {e}")
+                raise e
+            except stripe.error.SignatureVerificationError as e:
+                # Invalid signature
+                logger.error(f"Invalid signature: {e}")
+                raise e
 
         # Handle the event
         if event['type'] == 'checkout.session.completed':

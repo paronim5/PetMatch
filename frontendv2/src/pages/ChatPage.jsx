@@ -322,7 +322,7 @@ const ChatPage = () => {
             <>
                 <div className="p-4 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between">
                     <div className="flex items-center">
-                        <button onClick={() => setSelectedMatch(null)} className="mr-3 md:hidden text-gray-500 hover:text-rose-500">
+                        <button onClick={() => setSelectedMatch(null)} className="mr-3 md:hidden text-gray-500 hover:text-rose-500 p-2 min-h-[48px] min-w-[48px] flex items-center justify-center">
                             <FaArrowLeft size={20} />
                         </button>
                         {(() => {

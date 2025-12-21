@@ -15,8 +15,12 @@ const LoginPage = () => {
       const data = await authService.login(email, password);
       console.log('Login successful:', data);
       localStorage.setItem('token', data.access_token);
-      // Redirect to matching page for immediate engagement
-      navigate('/matching');
+      // Redirect based on profile status
+      if (data.profile_incomplete) {
+        navigate('/complete-profile');
+      } else {
+        navigate('/matching');
+      }
     } catch (error) {
       console.error('Login failed:', error);
       alert('Login failed: ' + error.message);
@@ -47,9 +51,9 @@ const LoginPage = () => {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold text-center text-rose-dark mb-6">Login to PetMatch</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light p-4">
+      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h2 className="text-xl md:text-2xl font-bold text-center text-rose-dark mb-6">Login to PetMatch</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -59,7 +63,7 @@ const LoginPage = () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
               required
             />
           </div>
@@ -71,14 +75,14 @@ const LoginPage = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-rose-dark text-white py-2 px-4 rounded-md hover:bg-rose-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-dark"
+            className="w-full bg-rose-dark text-white h-12 rounded-md hover:bg-rose-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-dark text-base font-medium"
           >
             Login
           </button>

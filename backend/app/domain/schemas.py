@@ -49,6 +49,7 @@ class UserPublic(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    profile_incomplete: Optional[bool] = False
 
 class TokenData(BaseModel):
     email: Optional[str] = None

@@ -29,6 +29,8 @@ services:
     # Only mount static files for uploads persistence.
     volumes:
       - petmatch_uploads:/app/static/uploads
+    env_file:
+      - ./backend/.env
     environment:
       - POSTGRES_SERVER=db
       - POSTGRES_USER=postgres
@@ -41,6 +43,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - petmatch-network
+
+  stripe:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to backend:8000/api/v1/subscription/webhook --api-key ${STRIPE_SECRET_KEY}
+    environment:
+      - STRIPE_API_KEY=${STRIPE_SECRET_KEY}
+    volumes:
+      - ./backend/.env:/work/.env
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
     networks:
       - petmatch-network
 

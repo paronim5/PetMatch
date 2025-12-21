@@ -247,7 +247,7 @@ const MatchingPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md p-4">
         <div 
-          className="relative w-full bg-white rounded-2xl shadow-xl overflow-hidden h-[600px] flex flex-col select-none touch-none"
+          className="relative w-full bg-white rounded-2xl shadow-xl overflow-hidden h-[60vh] min-h-[400px] max-h-[600px] flex flex-col select-none touch-none"
           style={getCardStyle()}
           onMouseDown={handleDragStart}
           onMouseMove={handleDragMove}
@@ -329,12 +329,12 @@ const MatchingPage = () => {
         </div>
 
         {/* Swipe Controls */}
-        <div className="flex items-center justify-center gap-6 mt-6 w-full">
-          <button onClick={handleRewind} className="p-3 bg-white rounded-full shadow-lg text-yellow-500 hover:scale-110 transition-all"><FaUndo size={20} /></button>
-          <button onClick={() => handleSwipe('left')} className="p-4 bg-white rounded-full shadow-lg text-red-500 hover:scale-110 transition-all border border-red-100"><FaTimes size={32} /></button>
-          <button onClick={() => handleSwipe('up')} className="p-3 bg-white rounded-full shadow-lg text-blue-500 hover:scale-110 transition-all -mt-8"><FaStar size={24} /></button>
-          <button onClick={() => handleSwipe('right')} className="p-4 bg-white rounded-full shadow-lg text-green-500 hover:scale-110 transition-all border border-green-100"><FaHeart size={32} /></button>
-          <button onClick={handleBoost} className="p-3 bg-white rounded-full shadow-lg text-purple-500 hover:scale-110 transition-all"><FaBolt size={20} /></button>
+        <div className="flex items-center justify-center gap-4 mt-6 w-full">
+          <button onClick={handleRewind} className="p-3 bg-white rounded-full shadow-lg text-yellow-500 hover:scale-110 transition-all min-h-[48px] min-w-[48px] flex items-center justify-center"><FaUndo size={20} /></button>
+          <button onClick={() => handleSwipe('left')} className="p-4 bg-white rounded-full shadow-lg text-red-500 hover:scale-110 transition-all border border-red-100 min-h-[64px] min-w-[64px] flex items-center justify-center"><FaTimes size={32} /></button>
+          <button onClick={() => handleSwipe('up')} className="p-3 bg-white rounded-full shadow-lg text-blue-500 hover:scale-110 transition-all -mt-8 min-h-[48px] min-w-[48px] flex items-center justify-center"><FaStar size={24} /></button>
+          <button onClick={() => handleSwipe('right')} className="p-4 bg-white rounded-full shadow-lg text-green-500 hover:scale-110 transition-all border border-green-100 min-h-[64px] min-w-[64px] flex items-center justify-center"><FaHeart size={32} /></button>
+          <button onClick={handleBoost} className="p-3 bg-white rounded-full shadow-lg text-purple-500 hover:scale-110 transition-all min-h-[48px] min-w-[48px] flex items-center justify-center"><FaBolt size={20} /></button>
         </div>
       </div>
       
