@@ -208,4 +208,6 @@ def create_swipe(
         raise
     except Exception as e:
         print(f"Swipe Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to record swipe")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to record swipe: {type(e).__name__}: {str(e)}")
