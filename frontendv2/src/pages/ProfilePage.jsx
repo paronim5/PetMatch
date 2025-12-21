@@ -61,6 +61,7 @@ const ProfilePage = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
+      setLoading(false);
       navigate('/login');
     } else {
       fetchUserAndPhotos();
@@ -86,6 +87,10 @@ const ProfilePage = () => {
       setSubscription(status);
     } catch (error) {
       console.error("Failed to fetch subscription:", error);
+      if (error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     }
   };
 
@@ -163,6 +168,14 @@ const ProfilePage = () => {
             drinking: userData.profile.drinking || 'never',
             interests: ''
           });
+        }
+      } else {
+        // Handle 401 from user fetch
+        const error = userRes.reason;
+        if (error && error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
         }
       }
 
