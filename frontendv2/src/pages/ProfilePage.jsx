@@ -120,6 +120,16 @@ const ProfilePage = () => {
     }
   };
 
+  // Helper to sanitize photo URLs
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
+    }
+    return url;
+  };
+
   const fetchUserAndPhotos = async () => {
     setLoading(true);
     try {
@@ -475,7 +485,7 @@ const ProfilePage = () => {
             {photos.map((photo) => (
               <div key={photo.id} className="relative group aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden">
                 <img
-                  src={photo.photo_url || 'https://via.placeholder.com/150'}
+                  src={getPhotoUrl(photo.photo_url) || 'https://via.placeholder.com/150'}
                   alt="Profile"
                   className="object-cover w-full h-40"
                   onError={(e) => {

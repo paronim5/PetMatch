@@ -111,15 +111,26 @@ const SwipeHistoryPage = () => {
     }
   };
 
+  // Helper to sanitize photo URLs
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
+    }
+    return url;
+  };
+
   const getPartnerDetails = (swipe) => {
     const swiper = swipe.swiper;
     const profile = swiper.profile || {};
     const photos = swiper.photos || [];
-    const mainPhoto = photos.find(p => p.is_main)?.url || photos[0]?.url;
+    // Fix: Use photo_url instead of url, and sanitize it
+    const mainPhotoUrl = photos.find(p => p.is_main)?.photo_url || photos[0]?.photo_url;
     return {
       id: swiper.id,
       name: swiper.username, 
-      photo: mainPhoto,
+      photo: getPhotoUrl(mainPhotoUrl),
       age: profile.date_of_birth ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : '?',
     };
   };

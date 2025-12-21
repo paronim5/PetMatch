@@ -217,10 +217,20 @@ const MatchingPage = () => {
     );
   }
 
+  // Helper to sanitize photo URLs
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
+    }
+    return url;
+  };
+
   const currentUser = candidates[currentIndex];
   const currentProfile = currentUser.profile;
   const photos = Array.isArray(currentUser?.photos) ? currentUser.photos : [];
-  const activePhotoUrl = photos.length > 0 ? photos[Math.min(photoIndex, photos.length - 1)]?.photo_url : null;
+  const activePhotoUrl = photos.length > 0 ? getPhotoUrl(photos[Math.min(photoIndex, photos.length - 1)]?.photo_url) : null;
   const getAge = (dob) => dob ? new Date().getFullYear() - new Date(dob).getFullYear() : '??';
 
   return (

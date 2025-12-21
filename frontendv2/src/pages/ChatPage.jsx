@@ -72,6 +72,16 @@ const ChatPage = () => {
     setShowReportModal(false);
   };
 
+  // Helper to sanitize photo URLs
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
+    }
+    return url;
+  };
+
   const getPartnerDetails = (match) => {
     if (!match || !currentUserId) return { name: 'Unknown', photo: null };
     const partner = getPartnerUser(match);
@@ -84,7 +94,7 @@ const ChatPage = () => {
         };
     }
 
-    const photoUrl = partner.photos && partner.photos.length > 0 ? partner.photos[0].photo_url : null;
+    const photoUrl = partner.photos && partner.photos.length > 0 ? getPhotoUrl(partner.photos[0].photo_url) : null;
     return {
         name: partner.username || `Match #${match.id}`,
         photo: photoUrl,

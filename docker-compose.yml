@@ -28,7 +28,7 @@ services:
     # For production, we don't mount the whole code directory.
     # Only mount static files for uploads persistence.
     volumes:
-      - ./backend/static:/app/static
+      - petmatch_uploads:/app/static/uploads
     environment:
       - POSTGRES_SERVER=db
       - POSTGRES_USER=postgres
@@ -50,6 +50,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:80"
+      - "80:80"
     depends_on:
       - backend
     networks:
@@ -57,6 +58,7 @@ services:
 
 volumes:
   postgres_data:
+  petmatch_uploads:
 
 networks:
   petmatch-network:
