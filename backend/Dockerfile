@@ -44,17 +44,17 @@ COPY --from=builder /app/requirements.txt .
 
 RUN pip install --no-cache /wheels/*
 
+# Create a non-root user first
+RUN addgroup --system app && adduser --system --group app
+
 # Copy application code
 COPY . .
 
 # Create static directory and set permissions
 RUN mkdir -p static/uploads && \
-    chown -R app:app static && \
+    chown -R app:app /app && \
     chmod -R 755 static
 
-# Create a non-root user and fix permissions
-RUN addgroup --system app && adduser --system --group app
-RUN chown -R app:app /app
 USER app
 
 EXPOSE 8000
