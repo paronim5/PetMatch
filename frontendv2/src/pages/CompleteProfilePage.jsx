@@ -69,6 +69,12 @@ const CompleteProfilePage = () => {
   };
 
   const handleLocationDetect = () => {
+    // Check for secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      alert("Location detection requires a secure connection (HTTPS) or localhost. Please enter your location manually or ensure you are using a secure connection.");
+      return;
+    }
+
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
@@ -83,8 +89,21 @@ const CompleteProfilePage = () => {
         },
         (error) => {
           console.error("Error getting location", error);
-          alert("Could not detect location. Please enter manually.");
+          let msg = "Could not detect location.";
+          if (error.code === 1) {
+            msg += " Permission denied. Please allow location access in your browser settings.";
+          } else if (error.code === 2) {
+            msg += " Position unavailable.";
+          } else if (error.code === 3) {
+            msg += " Timeout.";
+          }
+          alert(msg + " Please enter manually.");
           setLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {

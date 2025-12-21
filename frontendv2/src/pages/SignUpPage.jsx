@@ -170,6 +170,12 @@ const SignUpPage = () => {
   };
 
   const useCurrentLocation = () => {
+    // Check for secure context
+    if (!window.isSecureContext) {
+      alert("Location detection requires a secure connection (HTTPS) or localhost. Please enter your location manually.");
+      return;
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -181,7 +187,21 @@ const SignUpPage = () => {
           alert(`Location found: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
         },
         (error) => {
-          alert('Could not get your location. Please allow location access.');
+          console.error("Error getting location", error);
+          let msg = "Could not get your location.";
+          if (error.code === 1) {
+             msg += " Permission denied. Please allow location access.";
+          } else if (error.code === 2) {
+             msg += " Position unavailable.";
+          } else if (error.code === 3) {
+             msg += " Timeout.";
+          }
+          alert(msg + " Please enter manually.");
+        },
+        {
+           enableHighAccuracy: true,
+           timeout: 10000,
+           maximumAge: 0
         }
       );
     } else {
