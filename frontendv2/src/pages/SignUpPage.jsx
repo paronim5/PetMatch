@@ -110,6 +110,20 @@ const SignUpPage = () => {
             error = 'Passwords do not match.';
         }
         break;
+      case 'height_value':
+        if (value) {
+            const val = parseInt(value);
+            if (currentData.height_unit === 'cm') {
+                if (val < 100 || val > 250) {
+                    error = 'Height must be between 100 and 250 cm';
+                }
+            } else if (currentData.height_unit === 'feet_inches') {
+                if (val < 36 || val > 96) {
+                    error = 'Height must be between 36 and 96 inches';
+                }
+            }
+        }
+        break;
     }
     return error;
   };
@@ -128,6 +142,10 @@ const SignUpPage = () => {
         // If password changes, re-validate confirmPassword
         if (name === 'password' && nextFormData.confirmPassword) {
             next.confirmPassword = validateField('confirmPassword', nextFormData.confirmPassword, nextFormData);
+        }
+        // If height unit changes, re-validate height value
+        if (name === 'height_unit' && nextFormData.height_value) {
+            next.height_value = validateField('height_value', nextFormData.height_value, nextFormData);
         }
         return next;
     });
@@ -152,6 +170,12 @@ const SignUpPage = () => {
         const error = validateField('date_of_birth', formData.date_of_birth, formData);
         if (error) {
             currentStepErrors.date_of_birth = error;
+            hasError = true;
+        }
+    } else if (step === 3) {
+        const error = validateField('height_value', formData.height_value, formData);
+        if (error) {
+            currentStepErrors.height_value = error;
             hasError = true;
         }
     }
@@ -330,11 +354,11 @@ const SignUpPage = () => {
         errorMessage = error.response.data.detail;
       }
       
-      if (errorMessage.includes("already exists")) {
+      if (errorMessage && errorMessage.includes("already exists")) {
         setErrorMessage('This email is already registered. Please log in instead.');
         navigate('/login');
       } else {
-        setErrorMessage('We could not complete your registration. Please check your details and try again.');
+        setErrorMessage(errorMessage || 'We could not complete your registration. Please check your details and try again.');
       }
     } finally {
       setLoading(false);
@@ -526,7 +550,7 @@ const SignUpPage = () => {
                     name="height_value"
                     value={formData.height_value}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.height_value ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
                     placeholder="Height"
                   />
                   <select
@@ -539,6 +563,7 @@ const SignUpPage = () => {
                     <option value="feet_inches">ft</option>
                   </select>
                 </div>
+                {fieldErrors.height_value && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.height_value}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Education</label>

@@ -121,8 +121,32 @@ def update_user_profile(
         if latitude is not None and longitude is not None:
              current_user.profile.location = func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326)
         db.add(current_user.profile)
-    db.commit()
-    db.refresh(current_user.profile)
+    
+    try:
+        db.commit()
+        db.refresh(current_user.profile)
+    except IntegrityError as e:
+        db.rollback()
+        error_msg = str(e.orig)
+        logger.warning(f"IntegrityError updating profile: {error_msg}")
+        
+        if "valid_height_cm" in error_msg:
+             raise HTTPException(status_code=400, detail="Height must be between 100 cm and 250 cm.")
+        if "valid_height_inches" in error_msg:
+             raise HTTPException(status_code=400, detail="Height must be between 36 and 96 inches.")
+        if "valid_age_range" in error_msg:
+             raise HTTPException(status_code=400, detail="Min age must be less than max age.")
+        if "valid_min_age" in error_msg:
+             raise HTTPException(status_code=400, detail="Min age must be at least 18.")
+        
+        raise HTTPException(status_code=400, detail="Invalid profile data provided. Please check your inputs.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error updating profile: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to update profile due to a server error.")
+
     logger.info(f"Profile updated successfully for user {current_user.id}")
     return current_user.profile
 

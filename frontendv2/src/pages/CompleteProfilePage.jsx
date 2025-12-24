@@ -126,6 +126,22 @@ const CompleteProfilePage = () => {
         await userService.uploadPhoto(profilePhotoFile);
       }
 
+      // Validate Height
+      if (formData.height_value) {
+          const hVal = parseInt(formData.height_value);
+          if (formData.height_unit === 'cm') {
+               if (hVal < 100 || hVal > 250) {
+                   alert('Height must be between 100 and 250 cm');
+                   return;
+               }
+          } else if (formData.height_unit === 'feet_inches') {
+               if (hVal < 36 || hVal > 96) {
+                   alert('Height must be between 36 and 96 inches');
+                   return;
+               }
+          }
+      }
+
       // 2. Prepare Profile Payload
       let finalBio = formData.bio;
       if (formData.interests) {
