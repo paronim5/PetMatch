@@ -34,7 +34,11 @@ class Settings(BaseSettings):
         )
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
+        "http://localhost:5173",
+        "https://paroniim.xyz",
+        "https://www.paroniim.xyz"
+    ]
 
     # Google OAuth
     GOOGLE_CLIENT_ID: Optional[str] = None
@@ -44,8 +48,8 @@ class Settings(BaseSettings):
     # Stripe
     STRIPE_SECRET_KEY: Optional[str] = None
     STRIPE_WEBHOOK_SECRET: Optional[str] = None
-    STRIPE_SUCCESS_URL: str = "http://localhost:5173/profile?success=true"
-    STRIPE_CANCEL_URL: str = "http://localhost:5173/profile?canceled=true"
+    STRIPE_SUCCESS_URL: str = "https://paroniim.xyz/profile?success=true"
+    STRIPE_CANCEL_URL: str = "https://paroniim.xyz/profile?canceled=true"
 
     model_config = SettingsConfigDict(
         case_sensitive=True,

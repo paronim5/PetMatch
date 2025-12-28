@@ -7,8 +7,10 @@ services:
       dockerfile: Dockerfile.db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - ./backend/.env
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=petmatch
     networks:
       - petmatch-network
     healthcheck:
@@ -25,6 +27,13 @@ services:
       - petmatch_uploads:/app/static/uploads
     env_file:
       - ./backend/.env
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=petmatch
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=supersecretkey
     depends_on:
       db:
         condition: service_healthy
