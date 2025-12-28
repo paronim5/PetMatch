@@ -7,12 +7,8 @@ services:
       dockerfile: Dockerfile.db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=petmatch
-    ports:
-      - "5432:5432"
+    env_file:
+      - ./backend/.env
     networks:
       - petmatch-network
     healthcheck:
@@ -25,21 +21,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # For production, we don't mount the whole code directory.
-    # Only mount static files for uploads persistence.
     volumes:
       - petmatch_uploads:/app/static/uploads
     env_file:
       - ./backend/.env
-    environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=petmatch
-      - POSTGRES_PORT=5432
-      - SECRET_KEY=supersecretkey
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -64,11 +49,37 @@ services:
     build:
       context: ./frontendv2
       dockerfile: Dockerfile
-    ports:
-      - "5173:80"
-      - "80:80"
+    # Expose internally only
+    expose:
+      - "80"
     depends_on:
       - backend
+    networks:
+      - petmatch-network
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - petmatch-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     networks:
       - petmatch-network
 
