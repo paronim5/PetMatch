@@ -15,8 +15,9 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 # Map internal tiers to Stripe Price IDs
 # In a real app, these should be in config or DB
 # You should replace these with your actual Stripe Price IDs
+##price_1SgbUb1guJQMZVvrmG1UUoXP  prod_TdtH4pJXQkeUDI
 TIER_PRICE_IDS = {
-    "premium": "price_1SgQDL1guJQMZVvrowxunyud", # Placeholder
+    "premium": "price_1SgbUb1guJQMZVvrmG1UUoXP", # Placeholder
     "premium_plus": "price_1SgQE51guJQMZVvrBOoeDfJ6" # Placeholder
 }
 
