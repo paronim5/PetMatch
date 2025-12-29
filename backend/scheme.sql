@@ -1,4 +1,20 @@
 
+-- revoke premium subscription for user
+-- BEGIN;
+--   UPDATE users SET subscription_tier = 'free' WHERE email = '<user email>';
+--   DELETE FROM subscriptions WHERE user_id = (SELECT id FROM users WHERE email = '<user email>');
+-- COMMIT;
+-- 
+
+-- grant premium subscription for user
+-- WITH target_user AS (
+--     UPDATE users 
+--     SET subscription_tier = 'premium' 
+--     WHERE email = '<user email>'
+--     RETURNING id
+-- )
+-- INSERT INTO subscriptions (user_id, tier, start_date, is_active)
+-- SELECT id, 'premium', NOW(), TRUE FROM target_user;
     -- 1. EXTENSIONS & ENUMS
     CREATE EXTENSION IF NOT EXISTS postgis;
 
