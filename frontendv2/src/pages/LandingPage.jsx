@@ -205,7 +205,7 @@ const LandingPage = () => {
     {/* --- SCROLL PROGRESS INDICATOR --- */}
     <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
       <div 
-       className="h-full bg-gradient-to-r from-orange-400 to-rose-500 transition-all"
+       className="h-full bg-gradient-to-r from-secondary to-primary transition-all"
        style={{ width: `${scrollProgress * 100}%` }}
       />
     </div>
@@ -260,17 +260,17 @@ const LandingPage = () => {
 
     {/* Hero Section */}
     <section className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
-      <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-12 max-w-4xl shadow-2xl">
-       <h1 className="text-5xl md:text-7xl font-bold text-rose-600 mb-6 animate-pulse">
+      <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-8 md:p-12 max-w-4xl shadow-2xl mx-4">
+       <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary mb-6 animate-pulse">
          Welcome to PetMatch
        </h1>
-       <p className="text-xl md:text-2xl text-gray-700 mb-8 h-16">
-         {typingText}
-         <span className="animate-pulse">|</span>
+       <p className="text-lg md:text-2xl text-gray-700 mb-8 h-16 flex items-center justify-center">
+         <span>{typingText}</span>
+         <span className="animate-pulse ml-1 text-primary">|</span>
        </p>
        <button 
          onClick={scrollToSection}
-         className="bg-gradient-to-r from-orange-400 to-rose-500 text-white px-8 py-4 rounded-full text-xl font-semibold hover:scale-105 transition-transform shadow-lg"
+         className="bg-gradient-to-r from-secondary to-primary text-white px-6 py-3 md:px-8 md:py-4 rounded-full text-lg md:text-xl font-semibold hover:scale-105 transition-transform shadow-lg active:scale-95"
        >
          Start Your Journey
        </button>
@@ -281,19 +281,19 @@ const LandingPage = () => {
     <div id="floating-boxes-start" className="h-[200vh]"></div>
 
     {/* Features Section */}
-    <section className="relative z-10 py-20 px-4 bg-white/80 backdrop-blur-md rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+    <section className="relative z-10 py-16 md:py-20 px-4 bg-white/80 backdrop-blur-md rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
       <div className="max-w-6xl mx-auto">
-       <h2 className="text-4xl font-bold text-center text-rose-600 mb-12">Why Choose PetMatch?</h2>
-       <div className="grid md:grid-cols-3 gap-8">
+       <h2 className="text-3xl md:text-4xl font-bold text-center text-primary mb-8 md:mb-12">Why Choose PetMatch?</h2>
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
          {[
           { icon: '🏠', title: 'Find Your Match', desc: 'Browse thousands of adorable pets waiting for homes' },
           { icon: '❤️', title: 'Safe & Secure', desc: 'Verified shelters and responsible adoption process' },
           { icon: '🎉', title: 'Support Network', desc: 'Connect with pet owners and get expert advice' }
          ].map((feature, i) => (
-          <div key={i} className="bg-white rounded-xl p-8 shadow-lg hover:shadow-2xl transition-shadow">
-            <div className="text-6xl mb-4">{feature.icon}</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">{feature.title}</h3>
-            <p className="text-gray-600">{feature.desc}</p>
+          <div key={i} className="bg-white rounded-xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <div className="text-5xl md:text-6xl mb-4">{feature.icon}</div>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">{feature.title}</h3>
+            <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
           </div>
          ))}
        </div>

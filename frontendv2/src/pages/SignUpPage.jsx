@@ -368,7 +368,7 @@ const SignUpPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light p-4">
       <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-xl md:text-2xl font-bold text-center text-rose-dark mb-6">
+        <h2 className="text-xl md:text-2xl font-bold text-center text-primary mb-6">
           {step === 1 && "Create Account"}
           {step === 2 && "Tell us about yourself"}
           {step === 3 && "Lifestyle & Work"}
@@ -386,10 +386,10 @@ const SignUpPage = () => {
         )}
 
         <div className="mb-6 flex justify-between items-center px-4">
-          <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
-          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 2 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
-          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 3 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
-          <div className={`h-2 flex-1 rounded-full ${step >= 4 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 rounded-full ${step >= 4 ? 'bg-primary' : 'bg-gray-200'}`}></div>
         </div>
 
         <form onSubmit={step === 4 ? handleSubmit : nextStep} className="space-y-4">
@@ -403,7 +403,7 @@ const SignUpPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   required
                 />
               </div>
@@ -414,7 +414,7 @@ const SignUpPage = () => {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                   placeholder="yourname"
                 />
@@ -431,7 +431,7 @@ const SignUpPage = () => {
                     name="phone_country_code"
                     value={formData.phone_country_code}
                     onChange={handleChange}
-                    className="mt-1 block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="+420">Czech Republic (+420)</option>
                     <option value="+1">United States (+1)</option>
@@ -451,7 +451,7 @@ const SignUpPage = () => {
                     onChange={handleChange}
                     inputMode="tel"
                     autoComplete="tel"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                     required
                     placeholder="777427379
                     "
@@ -467,7 +467,7 @@ const SignUpPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                 />
                 {fieldErrors.password && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.password}</p>}
@@ -479,7 +479,7 @@ const SignUpPage = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                 />
                 {fieldErrors.confirmPassword && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.confirmPassword}</p>}
@@ -496,7 +496,7 @@ const SignUpPage = () => {
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   required
                 />
               </div>
@@ -507,7 +507,7 @@ const SignUpPage = () => {
                   name="surname"
                   value={formData.surname}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 />
               </div>
               <div>
@@ -517,7 +517,7 @@ const SignUpPage = () => {
                   name="date_of_birth"
                   value={formData.date_of_birth}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.date_of_birth ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.date_of_birth ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                 />
                 {fieldErrors.date_of_birth && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.date_of_birth}</p>}
@@ -528,7 +528,7 @@ const SignUpPage = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -550,14 +550,14 @@ const SignUpPage = () => {
                     name="height_value"
                     value={formData.height_value}
                     onChange={handleChange}
-                    className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.height_value ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                    className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.height_value ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                     placeholder="Height"
                   />
                   <select
                     name="height_unit"
                     value={formData.height_unit}
                     onChange={handleChange}
-                    className="mt-1 block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="cm">cm</option>
                     <option value="feet_inches">ft</option>
@@ -572,7 +572,7 @@ const SignUpPage = () => {
                   name="education"
                   value={formData.education}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="Highest degree/school"
                 />
               </div>
@@ -583,7 +583,7 @@ const SignUpPage = () => {
                   name="occupation"
                   value={formData.occupation}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="Current job"
                 />
               </div>
@@ -593,7 +593,7 @@ const SignUpPage = () => {
                   name="relationship_goal"
                   value={formData.relationship_goal}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 >
                   <option value="relationship">Relationship</option>
                   <option value="casual">Casual</option>
@@ -608,7 +608,7 @@ const SignUpPage = () => {
                     name="smoking"
                     value={formData.smoking}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="never">Never</option>
                     <option value="occasionally">Occasionally</option>
@@ -622,7 +622,7 @@ const SignUpPage = () => {
                     name="drinking"
                     value={formData.drinking}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="never">Never</option>
                     <option value="occasionally">Occasionally</option>
@@ -638,7 +638,7 @@ const SignUpPage = () => {
                   name="interests"
                   value={formData.interests || ''}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="e.g. Hiking, Photography, Cooking"
                 />
               </div>
@@ -692,7 +692,7 @@ const SignUpPage = () => {
                       name="latitude"
                       value={formData.latitude}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                   <div>
@@ -703,7 +703,7 @@ const SignUpPage = () => {
                       name="longitude"
                       value={formData.longitude}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                 </div>
@@ -753,7 +753,7 @@ const SignUpPage = () => {
                       name="min_age"
                       value={formData.min_age}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                   <div>
@@ -764,7 +764,7 @@ const SignUpPage = () => {
                       name="max_age"
                       value={formData.max_age}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                   <div>
@@ -775,7 +775,7 @@ const SignUpPage = () => {
                       name="max_distance"
                       value={formData.max_distance}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                 </div>
@@ -810,7 +810,7 @@ const SignUpPage = () => {
                   value={formData.bio}
                   onChange={handleChange}
                   rows="3"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="I love dogs and hiking..."
                 ></textarea>
               </div>
@@ -830,7 +830,7 @@ const SignUpPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
+              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
             >
               {loading ? 'Processing...' : (step === 4 ? 'Complete Sign Up' : 'Next')}
             </button>

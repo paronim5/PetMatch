@@ -53,7 +53,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light p-4">
       <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-xl md:text-2xl font-bold text-center text-rose-dark mb-6">Login to PetMatch</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-center text-primary mb-6">Login to PetMatch</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -63,7 +63,7 @@ const LoginPage = () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
               required
             />
           </div>
@@ -75,14 +75,14 @@ const LoginPage = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-rose-dark text-white h-12 rounded-md hover:bg-rose-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-dark text-base font-medium"
+            className="w-full bg-primary text-white h-12 rounded-md hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary text-base font-medium transition-colors"
           >
             Login
           </button>
@@ -101,7 +101,7 @@ const LoginPage = () => {
           <div className="mt-6">
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-dark"
+              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               <FcGoogle className="w-5 h-5 mr-2" />
               Login with Google
@@ -111,7 +111,7 @@ const LoginPage = () => {
 
         <p className="mt-4 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-rose-dark hover:text-rose-light">
+          <Link to="/signup" className="font-medium text-primary hover:text-primary-light">
             Sign up
           </Link>
         </p>
