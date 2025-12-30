@@ -448,7 +448,7 @@ const ProfilePage = () => {
                 if (!window.confirm('This will permanently delete your account. Continue?')) return;
                 try {
                   const token = localStorage.getItem('token');
-                  const response = await fetch(`${import.meta.env.DEV ? '/api' : 'http://localhost:8000/api/v1'}/users/me`, {
+                  const response = await fetch(`${import.meta.env.DEV ? '/api' : 'https://paroniim.xyz/api/v1'}/users/me`, {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${token}` }
                   });
