@@ -448,14 +448,24 @@ const ProfilePage = () => {
                 if (!window.confirm('This will permanently delete your account. Continue?')) return;
                 try {
                   const token = localStorage.getItem('token');
-                  await fetch(`${import.meta.env.DEV ? '/api' : 'http://localhost:8000/api/v1'}/users/me`, {
+                  const response = await fetch(`${import.meta.env.DEV ? '/api' : 'http://localhost:8000/api/v1'}/users/me`, {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${token}` }
                   });
+                  
+                  if (!response.ok) {
+                     const data = await response.json();
+                     if (response.status === 403) {
+                         alert(data.detail); // Show the backend message if restricted
+                         return;
+                     }
+                     throw new Error(data.detail || 'Failed to delete account');
+                  }
+                  
                   localStorage.removeItem('token');
                   navigate('/signup');
                 } catch (e) {
-                  alert('Failed to delete account');
+                  alert(e.message || 'Failed to delete account');
                 }
               }}
               className="bg-white py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center gap-2"

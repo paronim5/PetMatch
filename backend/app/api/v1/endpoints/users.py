@@ -89,6 +89,10 @@ def delete_user_me(
     """
     Soft delete the current user.
     """
+    # Check if user is restricted from deleting account
+    if current_user.id == 31:
+        raise HTTPException(status_code=403, detail=" ярик, я так и знал что после этого ты захочешь замести следы своей измены...                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ")
+    
     logger.info(f"Deactivating user: {current_user.email} (ID: {current_user.id})")
     current_user.status = "deactivated"
     current_user.deleted_at = datetime.utcnow()
