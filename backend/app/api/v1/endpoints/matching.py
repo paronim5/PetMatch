@@ -9,6 +9,9 @@ from app.domain.models import Swipe as SwipeModel, Match, User as UserModel, Use
 from datetime import datetime
 from app.domain.enums import SwipeType
 from app.services.notification_service import notification_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -56,7 +59,11 @@ def get_matching_candidates(
     """
     Get matching candidates for the current user.
     """
-    return matching_service.get_matches(db, user=current_user, limit=limit)
+    try:
+        return matching_service.get_matches(db, user=current_user, limit=limit)
+    except Exception as e:
+        logger.error(f"Error fetching candidates for user {current_user.id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error: Failed to fetch candidates.")
 
 @router.get("/likers", response_model=List[User])
 def get_likers(

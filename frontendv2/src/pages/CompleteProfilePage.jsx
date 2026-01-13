@@ -258,6 +258,31 @@ const CompleteProfilePage = () => {
           {/* Profile Picture */}
           <div className="bg-gray-50 p-4 rounded-lg space-y-4">
              <h3 className="text-lg font-medium text-gray-900">Profile Picture</h3>
+             
+             {/* Upload Guidelines */}
+              <div className="mb-4 p-4 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100">
+                <p className="font-bold mb-3 flex items-center"><FaShieldAlt className="mr-2"/> Strict Content Guidelines:</p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-white p-3 rounded border border-green-200">
+                      <p className="font-bold text-green-700 mb-2 flex items-center"><FaCheckCircle className="mr-1"/> ACCEPTED</p>
+                      <ul className="space-y-1 text-gray-600 text-xs">
+                        <li>• Clear animal photos</li>
+                        <li>• Cats, dogs, birds, etc.</li>
+                        <li>• Well-lit & high quality</li>
+                      </ul>
+                   </div>
+                   <div className="bg-white p-3 rounded border border-red-200">
+                      <p className="font-bold text-red-700 mb-2 flex items-center"><FaTimesCircle className="mr-1"/> REJECTED</p>
+                      <ul className="space-y-1 text-gray-600 text-xs">
+                        <li>• Human faces (Strict)</li>
+                        <li>• Blurry or dark photos</li>
+                        <li>• Non-animal objects</li>
+                      </ul>
+                   </div>
+                </div>
+              </div>
+
              <div>
                 <input
                   type="file"
@@ -534,12 +559,21 @@ const CompleteProfilePage = () => {
             </div>
           </div>
 
+          {/* Submit Button */}
           <div>
+            {submitError && (
+              <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{submitError}</span>
+              </div>
+            )}
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+              disabled={loading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                loading ? 'bg-rose-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2`}
             >
-              Complete Profile
+              {loading ? 'Saving...' : 'Complete Profile'}
             </button>
           </div>
         </form>

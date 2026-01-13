@@ -147,21 +147,41 @@ class AIService:
             if img is None:
                 return False
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Equalize histogram to improve contrast
+            gray = cv2.equalizeHist(gray)
             
-            # Load cascades
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            profile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
+            # Load cascades - prioritize multiple for better recall (Catch all faces)
+            cascades = []
             
-            faces = []
-            if not face_cascade.empty():
-                faces.extend(face_cascade.detectMultiScale(gray, 1.1, 4))
+            # Standard Frontal
+            cascades.append(cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'))
+            # Alt Frontal (often better)
+            cascades.append(cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_alt.xml'))
+            # Profile
+            cascades.append(cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml'))
             
-            if not profile_cascade.empty():
-                faces.extend(profile_cascade.detectMultiScale(gray, 1.1, 4))
+            faces_found = 0
+            for cascade in cascades:
+                if cascade.empty():
+                    continue
+                # stricter parameters: scaleFactor 1.1, minNeighbors 3 (lower neighbors = more detection, more false positives)
+                # Since we want to strictly REJECT faces, we prefer False Positives (rejecting non-faces) over False Negatives (allowing faces).
+                detected = cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=3, minSize=(30, 30))
+                faces_found += len(detected)
+                
+                if len(detected) > 0:
+                    # Log for debugging
+                    logger.info(f"Face detected by cascade. Count: {len(detected)}")
+                    # We can return early if we want speed, but let's check others if needed. 
+                    # Actually, if any finds a face, we consider it a face.
+                    return True
 
-            return len(faces) > 0
+            return False
         except Exception as e:
             logger.warning(f"Face detection failed: {e}")
+            # Fail safe: If detection fails, assume no face? Or strict fail?
+            # Usually assume no face to avoid blocking on error, but 'strict enforcement' might imply otherwise.
+            # Sticking to False for error safety.
             return False
 
     def _check_security(self, image_bytes: bytes) -> dict:

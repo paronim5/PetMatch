@@ -55,7 +55,7 @@ def test_upload_multiple_photos_success():
          patch("app.api.v1.endpoints.users.Image.open") as mock_image_open:
         
         # AI returns true
-        mock_validate.return_value = {"is_animal": True, "is_safe": True, "has_human_face": False}
+        mock_validate.return_value = {"is_animal": True, "is_safe": True, "has_human_face": False, "confidence_score": 0.95}
         
         # Mock Image.open context manager
         mock_img = MagicMock()
@@ -133,7 +133,7 @@ def test_upload_photos_ai_rejection():
 
 def test_upload_photos_duplicate():
     with patch("app.api.v1.endpoints.users.ai_service.validate_image") as mock_validate:
-        mock_validate.return_value = {"is_animal": True, "is_safe": True, "has_human_face": False}
+        mock_validate.return_value = {"is_animal": True, "is_safe": True, "has_human_face": False, "confidence_score": 0.95}
         
         files = [("files", ("dup.jpg", b"content", "image/jpeg"))]
         
@@ -153,7 +153,7 @@ def test_upload_photos_resolution_low():
     with patch("app.api.v1.endpoints.users.ai_service.validate_image") as mock_validate, \
          patch("app.api.v1.endpoints.users.Image.open") as mock_image_open:
         
-        mock_validate.return_value = {"is_animal": True, "is_safe": True}
+        mock_validate.return_value = {"is_animal": True, "is_safe": True, "confidence_score": 0.95}
         
         # Mock Image with small size
         mock_img = MagicMock()
@@ -177,7 +177,7 @@ def test_upload_photos_unsafe():
     with patch("app.api.v1.endpoints.users.ai_service.validate_image") as mock_validate, \
          patch("app.api.v1.endpoints.users.Image.open") as mock_image_open:
         
-        mock_validate.return_value = {"is_animal": True, "is_safe": False, "has_human_face": False}
+        mock_validate.return_value = {"is_animal": True, "is_safe": False, "has_human_face": False, "confidence_score": 0.95}
         
         # Mock Image
         mock_img = MagicMock()
@@ -197,14 +197,14 @@ def test_upload_photos_unsafe():
         assert response.status_code == 400
         assert "Inappropriate content" in response.json()["detail"]
 
-def test_upload_photos_human_face_success():
+def test_upload_photos_human_face_rejected():
     with patch("app.api.v1.endpoints.users.ai_service.validate_image") as mock_validate, \
          patch("app.api.v1.endpoints.users.open", new_callable=MagicMock), \
          patch("app.api.v1.endpoints.users.os.makedirs"), \
          patch("app.api.v1.endpoints.users.Image.open") as mock_image_open:
         
         # Not animal, but has human face, and safe
-        mock_validate.return_value = {"is_animal": False, "has_human_face": True, "is_safe": True}
+        mock_validate.return_value = {"is_animal": False, "has_human_face": True, "is_safe": True, "confidence_score": 0.0}
         
         mock_img = MagicMock()
         mock_img.width = 800
@@ -226,4 +226,5 @@ def test_upload_photos_human_face_success():
         
         response = client.post("/api/v1/users/me/photos/upload", files=files)
         
-        assert response.status_code == 200
+        assert response.status_code == 400
+        assert "Human face detected" in response.json()["detail"]

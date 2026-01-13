@@ -15,12 +15,12 @@ export const validateImage = (file: File): Promise<{ ok: boolean; message: strin
       return;
     }
 
-    // 2. Check Size (e.g., max 10MB)
-    const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+    // 2. Check Size (e.g., max 5MB to match backend)
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSizeInBytes) {
       resolve({ 
         ok: false, 
-        message: `Image size is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Please upload an image smaller than 10MB.` 
+        message: `Image size is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Please upload an image smaller than 5MB.` 
       });
       return;
     }

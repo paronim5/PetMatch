@@ -305,7 +305,7 @@ const ProfilePage = () => {
       fetchUserAndPhotos();
     } catch (error) {
       console.error('Failed to add photo:', error);
-      alert('Failed to add photo');
+      setUploadError(error.message || 'Failed to add photo');
     }
   };
 
@@ -514,36 +514,77 @@ const ProfilePage = () => {
           </div>
 
           {showPhotoInput && (
-            <form onSubmit={handleUploadPhoto} className="mb-6 space-y-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-rose-50 file:text-rose-700
-                      hover:file:bg-rose-100"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newPhotoFile}
-                    className="bg-rose-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-                  >
-                    Upload
-                  </button>
-                </div>
-                {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
-              </div>
-              {newPhotoPreview && (
-                <div className="w-32 h-32 relative rounded-lg overflow-hidden border border-gray-300">
-                  <img src={newPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+            <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <h4 className="font-medium text-gray-700 mb-2">Upload New Photo</h4>
+              
+              {/* Upload Guidelines */}
+                      <div className="mb-4 p-4 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100">
+                        <p className="font-bold mb-3 flex items-center"><FaShieldAlt className="mr-2"/> Strict Content Guidelines:</p>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="bg-white p-3 rounded border border-green-200">
+                              <p className="font-bold text-green-700 mb-2 flex items-center"><FaCheckCircle className="mr-1"/> ACCEPTED</p>
+                              <ul className="space-y-1 text-gray-600 text-xs">
+                                <li>• Clear animal photos</li>
+                                <li>• Cats, dogs, birds, etc.</li>
+                                <li>• Well-lit & high quality</li>
+                              </ul>
+                           </div>
+                           <div className="bg-white p-3 rounded border border-red-200">
+                              <p className="font-bold text-red-700 mb-2 flex items-center"><FaTimesCircle className="mr-1"/> REJECTED</p>
+                              <ul className="space-y-1 text-gray-600 text-xs">
+                                <li>• Human faces (Strict)</li>
+                                <li>• Blurry or dark photos</li>
+                                <li>• Non-animal objects</li>
+                              </ul>
+                           </div>
+                        </div>
+                        <p className="mt-3 text-xs text-blue-600">
+                           <strong>Note:</strong> Our AI automatically screens all uploads. Violations may result in account restrictions.
+                        </p>
+                      </div>
+
+              {uploadError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded border border-red-200">
+                  {uploadError}
                 </div>
               )}
-            </form>
+              
+              <form onSubmit={handleUploadPhoto} className="space-y-4">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100"
+                />
+                {newPhotoPreview && (
+                  <div className="mt-2">
+                    <img src={newPhotoPreview} alt="Preview" className="h-40 w-40 object-cover rounded-md border border-gray-300" />
+                  </div>
+                )}
+                <div className="flex justify-end space-x-3">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowPhotoInput(false);
+                      setNewPhotoFile(null);
+                      setNewPhotoPreview(null);
+                      setUploadError('');
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={!newPhotoFile}
+                    className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${!newPhotoFile ? 'bg-gray-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700'}`}
+                  >
+                    Upload Photo
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
