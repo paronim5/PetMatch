@@ -231,6 +231,17 @@ class AIService:
         # 3. Face Detection
         has_face = self._detect_faces(image_bytes)
         
+        # 4. Quarantine Logic
+        quarantine = False
+        rejection_reason = None
+        
+        if has_face:
+            quarantine = True
+            rejection_reason = "Human face detected"
+        elif not result["is_animal"]:
+            quarantine = True
+            rejection_reason = "No animal detected"
+        
         end_time = time.time()
         processing_time_ms = (end_time - start_time) * 1000
         
@@ -240,6 +251,8 @@ class AIService:
             "confidence_score": result["confidence_score"],
             "is_safe": result.get("is_safe", True),
             "has_human_face": has_face,
+            "quarantine": quarantine,
+            "rejection_reason": rejection_reason,
             "processing_time_ms": processing_time_ms
         }
 
