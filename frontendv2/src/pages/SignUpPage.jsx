@@ -40,8 +40,9 @@ const SignUpPage = () => {
     max_distance: 50,
     preferred_genders: ['female', 'male']
   });
-  const [loading, setLoading] = useState(false);
-  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState('');
+  const [profilePhotoFiles, setProfilePhotoFiles] = useState([]);
+  const [photoValidations, setPhotoValidations] = useState({});
   const [photoError, setPhotoError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -233,6 +234,76 @@ const SignUpPage = () => {
     }
   };
 
+  const handleFileSelect = async (files) => {
+    if (files.length === 0) return;
+    
+    // Limit total photos
+    if (profilePhotoFiles.length + files.length > 10) {
+        setPhotoError("Maximum 10 photos allowed.");
+        return;
+    }
+    
+    setPhotoError('');
+    
+    // Filter duplicates
+    const uniqueFiles = files.filter(file => 
+        !profilePhotoFiles.some(existing => existing.name === file.name && existing.size === file.size)
+    );
+    
+    if (uniqueFiles.length < files.length) {
+         // Could show a warning, but for now just ignoring duplicates
+         console.log("Skipped duplicates");
+    }
+
+    const newFiles = [...profilePhotoFiles, ...uniqueFiles];
+    setProfilePhotoFiles(newFiles);
+    
+    // Validate new files
+    for (const file of uniqueFiles) {
+        // Init status
+        setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'loading', message: 'Validating...' } }));
+        
+        // 1. Client-side checks
+        const clientValid = await validateImage(file);
+        if (!clientValid.ok) {
+            setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: clientValid.message } }));
+            continue;
+        }
+        
+        // 2. Server-side AI check
+        try {
+            const result = await userService.validatePhoto(file);
+            // Result should contain is_safe, is_animal, has_human_face from my backend update
+            // But if backend returns just result object, we check it.
+            // My backend validate_photo returns the dict from ai_service.validate_image
+            
+            if (!result.is_safe) {
+                 setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: 'Unsafe content detected' } }));
+            } else if (!result.is_animal && !result.has_human_face) {
+                 setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: 'No animal or face detected' } }));
+            } else {
+                 setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'success', message: 'Valid' } }));
+            }
+        } catch (err) {
+            console.error(err);
+            let msg = 'Validation failed';
+            if (err.response?.data?.detail) msg = err.response.data.detail;
+            setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: msg } }));
+        }
+    }
+  };
+
+  const removePhoto = (index) => {
+      const newFiles = [...profilePhotoFiles];
+      const removed = newFiles.splice(index, 1)[0];
+      setProfilePhotoFiles(newFiles);
+      setPhotoValidations(prev => {
+          const next = { ...prev };
+          delete next[removed.name];
+          return next;
+      });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -251,20 +322,24 @@ const SignUpPage = () => {
       return;
     }
     const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
+    
     // Validate photo
-    if (!profilePhotoFile) {
-      setPhotoError('Please upload a profile picture');
-      setErrorMessage('Please upload a profile picture');
+    const validPhotos = profilePhotoFiles.filter(f => photoValidations[f.name]?.status === 'success');
+    
+    if (validPhotos.length === 0) {
+      setPhotoError('Please upload at least one valid profile picture');
+      setErrorMessage('Please upload at least one valid profile picture');
       return;
     }
-    const isValid = await validateImage(profilePhotoFile);
-    if (!isValid.ok) {
-      setPhotoError(isValid.message);
-      setErrorMessage(isValid.message);
-      return;
+    
+    // Check if any are still loading
+    const anyLoading = profilePhotoFiles.some(f => photoValidations[f.name]?.status === 'loading');
+    if (anyLoading) {
+        setPhotoError('Please wait for photo validation to complete');
+        return;
     }
 
-    setLoading(true);
+    setSubmitStatus('Creating account...');
     try {
       const timestamp = new Date().toISOString();
       console.log(`[${timestamp}] Starting registration process...`);
@@ -277,23 +352,26 @@ const SignUpPage = () => {
       console.log(`[${new Date().toISOString()}] Step 1: User registered successfully.`);
       
       // 2. Auto Login
+      setSubmitStatus('Logging in...');
       console.log(`[${new Date().toISOString()}] Step 2: Auto-logging in with email=${formData.email}...`);
       const loginData = await authService.login(formData.email, formData.password);
       localStorage.setItem('token', loginData.access_token);
       console.log(`[${new Date().toISOString()}] Step 2: Login successful, token stored.`);
 
-      // 2a. Upload Profile Photo
-      if (profilePhotoFile) {
-        console.log(`[${new Date().toISOString()}] Step 2a: Uploading profile photo... Name: ${profilePhotoFile.name}, Size: ${profilePhotoFile.size} bytes, Type: ${profilePhotoFile.type}`);
+      // 2a. Upload Profile Photos
+      const photosToUpload = profilePhotoFiles.filter(f => photoValidations[f.name]?.status === 'success');
+      
+      if (photosToUpload.length > 0) {
+        console.log(`[${new Date().toISOString()}] Step 2a: Uploading ${photosToUpload.length} photos...`);
         try {
-            const photoResult = await userService.uploadPhoto(profilePhotoFile);
-            console.log(`[${new Date().toISOString()}] Step 2a: Photo uploaded successfully:`, photoResult);
+            const photoResult = await userService.uploadPhotos(photosToUpload);
+            console.log(`[${new Date().toISOString()}] Step 2a: Photos uploaded successfully:`, photoResult);
         } catch (photoErr) {
             console.error(`[${new Date().toISOString()}] Step 2a: Photo upload failed details:`, photoErr);
             throw new Error(`Photo upload failed: ${photoErr.message}`);
         }
       } else {
-        console.log(`[${new Date().toISOString()}] Step 2a: No profile photo to upload.`);
+        console.log(`[${new Date().toISOString()}] Step 2a: No valid profile photos to upload.`);
       }
 
       // 3. Update Profile
@@ -361,7 +439,7 @@ const SignUpPage = () => {
         setErrorMessage(errorMessage || 'We could not complete your registration. Please check your details and try again.');
       }
     } finally {
-      setLoading(false);
+      setSubmitStatus('');
     }
   };
 
@@ -716,30 +794,77 @@ const SignUpPage = () => {
                 </button>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0] || null;
-                    setProfilePhotoFile(file);
-                    setPhotoError('');
-                    
-                    if (file) {
-                      const isValid = await validateImage(file);
-                      if (!isValid.ok) {
-                        setPhotoError(isValid.message);
-                      }
-                    }
-                  }}
-                  className="mt-1 block w-full text-sm"
-                  required
-                />
-                {photoError && <p className="text-xs text-red-600 mt-1">{photoError}</p>}
-                {profilePhotoFile && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Selected: {profilePhotoFile.name} ({(profilePhotoFile.size/1024/1024).toFixed(2)} MB)
-                  </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Profile Pictures (Max 10)</label>
+                
+                <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rose-500 transition-colors cursor-pointer bg-white"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        handleFileSelect(Array.from(e.dataTransfer.files));
+                    }}
+                    onClick={() => document.getElementById('file-upload').click()}
+                >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => handleFileSelect(Array.from(e.target.files || []))}
+                      className="hidden"
+                    />
+                    <div className="text-gray-500">
+                        <p className="font-medium">Click to upload or drag and drop</p>
+                        <p className="text-xs mt-1">JPG, PNG, WebP up to 10MB</p>
+                    </div>
+                </div>
+
+                {photoError && <p className="text-xs text-red-600 mt-2">{photoError}</p>}
+                
+                {/* Photo List */}
+                {profilePhotoFiles.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {profilePhotoFiles.map((file, idx) => (
+                            <div key={idx} className="relative group border rounded-lg p-2 bg-gray-50">
+                                <div className="aspect-square bg-gray-200 rounded mb-2 overflow-hidden">
+                                    <img 
+                                        src={URL.createObjectURL(file)} 
+                                        alt="preview" 
+                                        className="w-full h-full object-cover"
+                                        onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                                    />
+                                </div>
+                                <div className="text-xs truncate font-medium text-gray-700">{file.name}</div>
+                                
+                                {/* Status Indicator */}
+                                <div className="mt-1 text-xs font-medium">
+                                    {photoValidations[file.name]?.status === 'loading' && (
+                                        <span className="text-blue-600 flex items-center gap-1">
+                                            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                            Validating...
+                                        </span>
+                                    )}
+                                    {photoValidations[file.name]?.status === 'success' && (
+                                        <span className="text-green-600">✓ Valid</span>
+                                    )}
+                                    {photoValidations[file.name]?.status === 'error' && (
+                                        <span className="text-red-600">✕ {photoValidations[file.name]?.message}</span>
+                                    )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
+                                    className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Remove photo"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 )}
               </div>
               <div className="bg-gray-50 p-4 rounded-lg space-y-4">
@@ -829,10 +954,10 @@ const SignUpPage = () => {
             )}
             <button
               type="submit"
-              disabled={loading}
+              disabled={!!submitStatus}
               className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
             >
-              {loading ? 'Processing...' : (step === 4 ? 'Complete Sign Up' : 'Next')}
+              {submitStatus || (step === 4 ? 'Complete Sign Up' : 'Next')}
             </button>
           </div>
         </form>

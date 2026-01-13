@@ -7,11 +7,22 @@ from app.core.logging import logger
 from sqlalchemy import text
 from datetime import date, timedelta
 from app.infrastructure.database import Database
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.limiter import limiter
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # TRUNCATE TABLE users cascade; delete all users
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Prometheus metrics
+Instrumentator().instrument(app).expose(app)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Mount static files
 import os
@@ -108,6 +119,10 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Shutting down PetMatch Backend...")
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 @app.get("/")
 def root():

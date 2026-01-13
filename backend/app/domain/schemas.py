@@ -111,6 +111,7 @@ class UserProfile(UserProfileBase):
 # Photo Schemas
 class UserPhotoBase(BaseModel):
     photo_url: str
+    thumbnail_url: Optional[str] = None
     is_primary: Optional[bool] = False
     photo_order: Optional[int] = 0
 

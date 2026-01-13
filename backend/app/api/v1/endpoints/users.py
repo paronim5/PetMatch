@@ -3,16 +3,20 @@ import shutil
 import os
 import uuid
 import io
+import mimetypes
 from datetime import datetime
 import traceback
+import hashlib
+from PIL import Image
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Response, UploadFile, File, Request
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func 
 
 from app.api import deps
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.domain.schemas import (
     User, UserCreate, UserUpdate, UserProfile, UserProfileUpdate, 
     UserPreferences, UserPreferencesUpdate, UserPhoto, UserPhotoCreate,
@@ -24,6 +28,7 @@ from app.domain.models import (
     Block as BlockModel, Report as ReportModel, PushToken as PushTokenModel,
 )
 from app.services.facade import user_facade
+from app.services.ai_service import ai_service
 from app.core.logging import logger
 from app.domain.enums import GenderType, DealBreakerType, UserStatusType
 from pydantic import BaseModel
@@ -223,67 +228,162 @@ def update_user_preferences(
 def read_user_photos(db: Session = Depends(deps.get_db), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
     return current_user.photos
 
-@router.post("/me/photos/upload", response_model=UserPhoto)
-def upload_user_photo(*, db: Session = Depends(deps.get_db), file: UploadFile = File(...), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
-    logger.info(f"Starting photo upload for user {current_user.id}")
-    try:
-        allowed_types = {"image/jpeg", "image/png", "image/webp"}
-        if file.content_type not in allowed_types:
-            logger.warning(f"Invalid file type: {file.content_type}")
-            raise HTTPException(status_code=400, detail=f"Invalid file type: {file.content_type}. Allowed: JPG, PNG, WebP")
-        
-        file_bytes = file.file.read()
-        file_size = len(file_bytes)
-        logger.info(f"File size: {file_size} bytes")
-        
-        if file_size > 5 * 1024 * 1024:
-            logger.warning("File too large")
-            raise HTTPException(status_code=400, detail="File too large (Max 5MB).")
-        
-        file.file.seek(0)
-        file_ext = os.path.splitext(file.filename)[1]
-        filename = f"{uuid.uuid4()}{file_ext}"
-        
-        # Ensure static/uploads exists
-        upload_dir = "static/uploads"
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        file_path = f"{upload_dir}/{filename}"
-        logger.info(f"Saving file to {file_path}")
-        
-        try:
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-        except IOError as e:
-            logger.error(f"Failed to write file to {file_path}: {e}")
-            raise HTTPException(status_code=500, detail="Could not save file to disk.")
-        
-        # Generate URL
-        # We'll use a relative path that starts with /static so the frontend can prepend the API base URL if needed,
-        # or it works if served from the same origin.
-        # Ideally, we should construct a full URL if we know the public domain.
-        # But `settings.BACKEND_CORS_ORIGINS` is a list, and might not be the actual public URL.
-        # Let's keep it relative for flexibility, or try to be smart.
-        
-        # FIX: The original code used settings.BACKEND_CORS_ORIGINS[0] which caused the crash if settings wasn't imported.
-        # We will use a safe default if settings are not configured or empty.
-        
-        photo_url = f"/static/uploads/{filename}"
-        logger.info(f"Photo saved successfully. URL: {photo_url}")
-        
-        count = db.query(UserPhotoModel).filter(UserPhotoModel.user_id == current_user.id).count()
-        photo = UserPhotoModel(user_id=current_user.id, photo_url=photo_url, is_primary=(count == 0), photo_order=count)
-        db.add(photo)
-        db.commit()
-        db.refresh(photo)
-        return photo
+@router.post("/me/photos/upload", response_model=List[UserPhoto])
+def upload_user_photo(
+    *, 
+    db: Session = Depends(deps.get_db), 
+    files: List[UploadFile] = File(...), 
+    current_user: Any = Depends(deps.get_current_active_user)
+) -> Any:
+    logger.info(f"Starting photo upload for user {current_user.id} with {len(files)} files")
+    
+    if len(files) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 photos allowed per upload.")
 
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        logger.error(f"Unexpected error in upload_user_photo: {e}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+    saved_photos = []
+    seen_hashes = set()
+    
+    # Get current photo count for ordering
+    base_count = db.query(UserPhotoModel).filter(UserPhotoModel.user_id == current_user.id).count()
+    
+    for i, file in enumerate(files):
+        try:
+            allowed_types = {"image/jpeg", "image/png", "image/webp"}
+            if file.content_type not in allowed_types:
+                logger.warning(f"Invalid file type: {file.content_type}")
+                raise HTTPException(status_code=400, detail=f"Invalid file type: {file.content_type}. Allowed: JPG, PNG, WebP")
+            
+            file_bytes = file.file.read()
+            file_size = len(file_bytes)
+            # Reset cursor for potential future reads (though we use bytes mostly)
+            file.file.seek(0)
+            
+            logger.info(f"Processing file: {file.filename}, size: {file_size} bytes")
+            
+            if file_size > 5 * 1024 * 1024:
+                logger.warning("File too large")
+                raise HTTPException(status_code=400, detail=f"File {file.filename} too large (Max 5MB).")
+
+            # Duplicate Detection
+            file_hash = hashlib.sha256(file_bytes).hexdigest()
+            
+            # Check within current batch
+            if file_hash in seen_hashes:
+                 logger.warning(f"Duplicate photo in batch: {file.filename}")
+                 # Skip duplicates in batch without failing the whole request? 
+                 # Or raise error? Frontend should have filtered.
+                 # Let's skip to be graceful.
+                 continue
+            
+            seen_hashes.add(file_hash)
+
+            duplicate = db.query(UserPhotoModel).filter(
+                UserPhotoModel.user_id == current_user.id,
+                UserPhotoModel.file_hash == file_hash
+            ).first()
+            
+            if duplicate:
+                logger.warning(f"Duplicate photo detected: {file.filename}")
+                raise HTTPException(status_code=400, detail=f"Duplicate photo: {file.filename} has already been uploaded.")
+
+            # AI Validation
+            try:
+                ai_result = ai_service.validate_image(file_bytes)
+                
+                if not ai_result.get('is_safe', True):
+                     logger.warning(f"AI rejected photo {file.filename} as unsafe")
+                     raise HTTPException(status_code=400, detail=f"Photo {file.filename} rejected: Inappropriate content detected.")
+
+                if not ai_result['is_animal'] and not ai_result.get('has_human_face', False):
+                    logger.warning(f"AI rejected photo {file.filename}: {ai_result}")
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Photo {file.filename} rejected: Please upload a photo containing an animal or a clear face"
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"AI check failed: {e}")
+                # Fail open
+                pass
+            
+            # Generate unique filename
+            file_ext = os.path.splitext(file.filename)[1]
+            if not file_ext:
+                # Deduce extension from content type if missing
+                file_ext = mimetypes.guess_extension(file.content_type) or ".jpg"
+
+            base_name = f"{uuid.uuid4()}"
+            filename = f"{base_name}{file_ext}"
+            thumb_filename = f"{base_name}_thumb{file_ext}"
+            
+            # Ensure static/uploads exists
+            upload_dir = "static/uploads"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            file_path = f"{upload_dir}/{filename}"
+            thumb_path = f"{upload_dir}/{thumb_filename}"
+            
+            # Check Resolution before saving
+            try:
+                with Image.open(io.BytesIO(file_bytes)) as img:
+                    if img.width < 200 or img.height < 200:
+                         raise HTTPException(status_code=400, detail=f"Image {file.filename} resolution too low (min 200x200).")
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"Failed to check resolution for {file.filename}: {e}")
+
+            logger.info(f"Saving file to {file_path}")
+            
+            try:
+                with open(file_path, "wb") as buffer:
+                    buffer.write(file_bytes)
+                
+                # Generate Thumbnail
+                try:
+                    with Image.open(io.BytesIO(file_bytes)) as img:
+                        # Convert to RGB if needed (e.g. PNG with alpha)
+                        if img.mode in ('RGBA', 'P'):
+                            img = img.convert('RGB')
+                        img.thumbnail((300, 300))
+                        img.save(thumb_path)
+                except Exception as e:
+                    logger.error(f"Failed to generate thumbnail: {e}")
+                    # Fallback to copy original if thumbnail fails
+                    shutil.copy(file_path, thumb_path)
+            except IOError as e:
+                logger.error(f"Failed to write file to {file_path}: {e}")
+                raise HTTPException(status_code=500, detail="Could not save file to disk.")
+            
+            photo_url = f"/static/uploads/{filename}"
+            
+            # If base_count is 0 and i is 0, it's primary.
+            is_primary = (base_count + i == 0)
+            photo_order = base_count + i
+            
+            photo = UserPhotoModel(
+                user_id=current_user.id, 
+                photo_url=photo_url, 
+                is_primary=is_primary, 
+                photo_order=photo_order,
+                file_hash=file_hash
+            )
+            db.add(photo)
+            saved_photos.append(photo)
+            
+        except HTTPException as he:
+            # Clean up logic could go here (delete saved files?)
+            raise he
+        except Exception as e:
+            logger.error(f"Unexpected error in upload_user_photo for {file.filename}: {e}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+    db.commit()
+    for p in saved_photos:
+        db.refresh(p)
+    return saved_photos
 
 @router.delete("/me/photos/{photo_id}")
 def delete_user_photo(*, db: Session = Depends(deps.get_db), photo_id: int, current_user: Any = Depends(deps.get_current_active_user)) -> Any:
@@ -321,4 +421,36 @@ def report_user(*, db: Session = Depends(deps.get_db), report_in: ReportCreate, 
 
 @router.get("/reports", response_model=List[ReportWithUser])
 def read_reports(skip: int = 0, limit: int = 100, db: Session = Depends(deps.get_db), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
-    return db.query(ReportModel).options(joinedload(ReportModel.reported)).filter(ReportModel.reporter_id == current_user.id).offset(skip).limit(limit).all()   
+    return db.query(ReportModel).options(joinedload(ReportModel.reported)).filter(ReportModel.reporter_id == current_user.id).offset(skip).limit(limit).all()
+
+@router.post("/validate-photo")
+@limiter.limit("20/minute")
+async def validate_photo(
+    request: Request,
+    file: UploadFile = File(...),
+) -> Any:
+    """
+    Validate if the uploaded photo contains an animal or clear face, and is safe.
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    try:
+        contents = await file.read()
+        
+        # Check size (10MB)
+        if len(contents) > 10 * 1024 * 1024:
+             raise HTTPException(status_code=400, detail="File too large (Max 10MB)")
+
+        # Use the comprehensive validation
+        result = ai_service.validate_image(contents)
+        
+        # Log the result
+        logger.info(f"Photo validation result for {file.filename}: {result}")
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating photo: {e}")
+        raise HTTPException(status_code=500, detail="Failed to validate photo")
