@@ -140,7 +140,6 @@ class AIService:
             # Load cascades
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
             if face_cascade.empty():
-                 # Try absolute path or skip if not found
                  return False
                  
             faces = face_cascade.detectMultiScale(gray, 1.1, 4)
@@ -149,10 +148,51 @@ class AIService:
             logger.warning(f"Face detection failed: {e}")
             return False
 
+    def _check_security(self, image_bytes: bytes) -> dict:
+        """
+        Basic security checks for uploaded files.
+        """
+        try:
+            # 1. Check for malicious signatures/content (Basic)
+            # Check for script tags that might be embedded
+            content_str = image_bytes[:2048].decode('utf-8', errors='ignore').lower() + \
+                          image_bytes[-2048:].decode('utf-8', errors='ignore').lower()
+            
+            suspicious_patterns = [
+                '<script', 'javascript:', 'vbscript:', 'onload=', 'onerror=',
+                '<?php', 'eval(', 'system('
+            ]
+            
+            for pattern in suspicious_patterns:
+                if pattern in content_str:
+                    logger.warning(f"Suspicious pattern found: {pattern}")
+                    return {"is_safe": False, "reason": "Potential malicious content detected"}
+
+            return {"is_safe": True}
+        except Exception as e:
+            logger.error(f"Security check failed: {e}")
+            return {"is_safe": False, "reason": "Security check error"}
+
     def validate_image(self, image_bytes: bytes) -> dict:
         start_time = time.time()
+        
+        # 1. Security Check
+        security_result = self._check_security(image_bytes)
+        if not security_result["is_safe"]:
+            return {
+                "is_animal": False,
+                "animal_type": None,
+                "confidence_score": 0.0,
+                "is_safe": False,
+                "security_reason": security_result.get("reason"),
+                "has_human_face": False,
+                "processing_time_ms": (time.time() - start_time) * 1000
+            }
+
+        # 2. AI Prediction
         result = self._predict_internal(image_bytes)
         
+        # 3. Face Detection
         has_face = self._detect_faces(image_bytes)
         
         end_time = time.time()

@@ -809,13 +809,14 @@ const SignUpPage = () => {
                       id="file-upload"
                       type="file"
                       multiple
-                      accept="image/jpeg,image/png,image/webp"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       onChange={(e) => handleFileSelect(Array.from(e.target.files || []))}
                       className="hidden"
                     />
                     <div className="text-gray-500">
                         <p className="font-medium">Click to upload or drag and drop</p>
-                        <p className="text-xs mt-1">JPG, PNG, WebP up to 10MB</p>
+                        <p className="text-xs mt-1">Animal photos only (JPG, PNG, WebP, GIF)</p>
+                        <p className="text-xs text-rose-500 mt-1">Strictly enforced: No humans allowed</p>
                     </div>
                 </div>
 

@@ -6,11 +6,11 @@ export const validateImage = (file: File): Promise<{ ok: boolean; message: strin
     }
 
     // 1. Check Format
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!validTypes.includes(file.type)) {
       resolve({ 
         ok: false, 
-        message: 'Invalid image format. Please upload a JPEG, PNG, or WebP image.' 
+        message: 'Invalid image format. Please upload a JPEG, PNG, WebP, or GIF image.' 
       });
       return;
     }
