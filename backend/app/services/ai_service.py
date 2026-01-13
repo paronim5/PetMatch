@@ -97,6 +97,12 @@ class AIService:
                     'squirrel', 'tabby', 'tiger_cat', 'persian_cat', 'siamese_cat', 'egyptian_cat'
                 ]
 
+                # Exclude non-animal objects that might match animal keywords
+                excluded_keywords = [
+                    'computer_mouse', 'mouse_pad', 'toy', 'plush', 'stuffed', 'teddy', 
+                    'monitor', 'screen', 'keyboard'
+                ]
+                
                 unsafe_keywords = ['bikini', 'maillot', 'brassiere', 'swimming_trunks', 'diaper', 'miniskirt']
                 
                 top_pred = decoded_preds[0]
@@ -109,6 +115,11 @@ class AIService:
 
                 for _, label, prob in decoded_preds:
                     label_lower = label.lower()
+                    
+                    # Check exclusions first
+                    if any(ex in label_lower for ex in excluded_keywords):
+                        continue
+
                     if any(keyword in label_lower for keyword in animal_keywords):
                         if not is_animal_detected: # Keep the highest confidence animal
                             is_animal_detected = True
@@ -139,10 +150,15 @@ class AIService:
             
             # Load cascades
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            if face_cascade.empty():
-                 return False
-                 
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            profile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
+            
+            faces = []
+            if not face_cascade.empty():
+                faces.extend(face_cascade.detectMultiScale(gray, 1.1, 4))
+            
+            if not profile_cascade.empty():
+                faces.extend(profile_cascade.detectMultiScale(gray, 1.1, 4))
+
             return len(faces) > 0
         except Exception as e:
             logger.warning(f"Face detection failed: {e}")
