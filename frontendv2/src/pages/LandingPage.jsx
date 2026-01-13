@@ -112,6 +112,10 @@ const LandingPage = () => {
  const [typingText, setTypingText] = useState('');
  const [typingIndex, setTypingIndex] = useState(0);
  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+ const [bgShouldLoad, setBgShouldLoad] = useState(false);
+ const [bgLoaded, setBgLoaded] = useState(false);
+ const [showScene, setShowScene] = useState(false);
+ const heroRef = useRef(null);
  
  const messages = [
    'Find your perfect pet companion.',
@@ -152,14 +156,35 @@ const LandingPage = () => {
 
  // Scroll tracking
  useEffect(() => {
-   const handleScroll = () => {
-    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const progress = window.scrollY / scrollHeight;
+  const handleScroll = () => {
+   const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+   const progress = window.scrollY / scrollHeight;
     setScrollProgress(Math.min(Math.max(progress, 0), 1));
    };
    
-   window.addEventListener('scroll', handleScroll);
-   return () => window.removeEventListener('scroll', handleScroll);
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+ }, []);
+
+ useEffect(() => {
+  const target = heroRef.current;
+  if (!target) {
+    setBgShouldLoad(true);
+    setShowScene(true);
+    return;
+  }
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        setBgShouldLoad(true);
+        setShowScene(true);
+        observer.disconnect();
+      }
+    },
+    { root: null, threshold: 0.1 }
+  );
+  observer.observe(target);
+  return () => observer.disconnect();
  }, []);
 
  // Custom Easing Function
@@ -200,7 +225,7 @@ const LandingPage = () => {
    : 'translateY(0)'; 
 
  return (
-   <div className="relative" style={{ minHeight: '300vh' }}>
+  <div className="relative" style={{ minHeight: '300vh' }}>
     
     {/* --- SCROLL PROGRESS INDICATOR --- */}
     <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
@@ -210,32 +235,47 @@ const LandingPage = () => {
       />
     </div>
 
-    {/* --- PARALLAX BACKGROUND IMAGE --- */}
     <div 
       className={`fixed top-0 left-0 w-full ${isMobile ? 'h-[150vh]' : 'h-full'}`} 
       style={{
-       backgroundImage: `url('${currentConfig.bgPath}')`, 
+       backgroundImage: bgShouldLoad
+         ? `url('${currentConfig.bgPath}')`
+         : 'linear-gradient(180deg, #fee2e2 0%, #fef3c7 40%, #ecfeff 100%)',
        backgroundSize: 'cover',
        backgroundPosition: 'center top',
        backgroundRepeat: 'no-repeat',
+       filter: bgLoaded ? 'none' : 'blur(20px)',
+       opacity: bgLoaded ? 1 : 0.9,
        zIndex: -1,
        transform: parallaxTransform, 
-       transition: 'transform 0.1s linear',
+       transition: 'transform 0.1s linear, filter 0.4s ease-out, opacity 0.4s ease-out',
       }}
     />
 
-    {/* 3D Canvas Background */}
-    <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
-      <Canvas 
-       camera={{ 
-         position: [0, isMobile ? 0 : -1, 10], 
-         fov: isMobile ? 30 : 22
-       }} 
-       shadows
-      >
-       <Scene scrollProgress={scrollProgress} isMobile={isMobile} />
-      </Canvas>
-    </div>
+    {bgShouldLoad && (
+      <img
+        src={currentConfig.bgPath}
+        alt=""
+        loading="eager"
+        decoding="async"
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        onLoad={() => setBgLoaded(true)}
+      />
+    )}
+
+    {showScene && (
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
+        <Canvas 
+         camera={{ 
+           position: [0, isMobile ? 0 : -1, 10], 
+           fov: isMobile ? 30 : 22
+         }} 
+         shadows
+        >
+         <Scene scrollProgress={scrollProgress} isMobile={isMobile} />
+        </Canvas>
+      </div>
+    )}
     
     {/* Floating Info Boxes (Needs isMobile prop passed) */}
     <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} />
@@ -258,8 +298,7 @@ const LandingPage = () => {
       </div>
     </header>
 
-    {/* Hero Section */}
-    <section className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
+    <section ref={heroRef} className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
       <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-8 md:p-12 max-w-4xl shadow-2xl mx-4">
        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary mb-6 animate-pulse">
          Welcome to PetMatch
