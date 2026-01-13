@@ -63,7 +63,8 @@ def get_matching_candidates(
         return matching_service.get_matches(db, user=current_user, limit=limit)
     except Exception as e:
         logger.error(f"Error fetching candidates for user {current_user.id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal Server Error: Failed to fetch candidates.")
+        # Include error detail in response for debugging purposes
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: Failed to fetch candidates. {str(e)}")
 
 @router.get("/likers", response_model=List[User])
 def get_likers(

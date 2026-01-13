@@ -111,7 +111,13 @@ def test_upload_photos_limit_exceeded():
 def test_upload_photos_ai_rejection():
     with patch("app.api.v1.endpoints.users.ai_service.validate_image") as mock_validate, \
          patch("app.api.v1.endpoints.users.Image.open") as mock_image_open:
-        mock_validate.return_value = {"is_animal": False, "is_safe": True, "has_human_face": False}
+        mock_validate.return_value = {
+            "is_animal": False, 
+            "is_safe": True, 
+            "has_human_face": False,
+            "quarantine": True,
+            "rejection_reason": "No animal detected"
+        }
         
         # Mock Image for resolution check
         mock_img = MagicMock()
@@ -204,7 +210,14 @@ def test_upload_photos_human_face_rejected():
          patch("app.api.v1.endpoints.users.Image.open") as mock_image_open:
         
         # Not animal, but has human face, and safe
-        mock_validate.return_value = {"is_animal": False, "has_human_face": True, "is_safe": True, "confidence_score": 0.0}
+        mock_validate.return_value = {
+            "is_animal": False, 
+            "has_human_face": True, 
+            "is_safe": True, 
+            "confidence_score": 0.0,
+            "quarantine": True,
+            "rejection_reason": "Human face detected"
+        }
         
         mock_img = MagicMock()
         mock_img.width = 800

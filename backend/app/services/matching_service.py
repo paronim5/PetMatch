@@ -1,4 +1,5 @@
 from typing import List, Protocol
+from datetime import date
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, not_, desc, or_, text
 from geoalchemy2.functions import ST_DWithin
@@ -98,19 +99,25 @@ class LocationBasedMatching(MatchingStrategy):
                     
                 # Filter by age if specified
                 if user.preferences:
-                    # Calculate birth dates based on age
-                    # PostgreSQL make_interval syntax: make_interval(years => integer)
+                    today = date.today()
+                    
                     if user.preferences.min_age:
-                        # To be at least X years old, birth date must be <= current_date - X years
-                        # Using text() for interval calculation to be safe across alchemy versions
-                        # make_interval(years := val)
-                        min_age_interval = text("make_interval(years => :years)").bindparams(years=user.preferences.min_age)
-                        min_birth_date = func.current_date() - min_age_interval
+                        # To be at least X years old, birth date must be <= today - X years
+                        try:
+                            min_birth_date = today.replace(year=today.year - user.preferences.min_age)
+                        except ValueError:
+                            # Handle Feb 29 for leap years
+                            min_birth_date = today.replace(year=today.year - user.preferences.min_age, month=2, day=28)
+                        
                         query = query.filter(UserProfile.date_of_birth <= min_birth_date)
+
                     if user.preferences.max_age:
-                        # To be at most Y years old, birth date must be > current_date - (Y + 1) years
-                        max_age_interval = text("make_interval(years => :years)").bindparams(years=user.preferences.max_age + 1)
-                        max_birth_date = func.current_date() - max_age_interval
+                        # To be at most Y years old, birth date must be > today - (Y + 1) years
+                        try:
+                            max_birth_date = today.replace(year=today.year - (user.preferences.max_age + 1))
+                        except ValueError:
+                            max_birth_date = today.replace(year=today.year - (user.preferences.max_age + 1), month=2, day=28)
+                            
                         query = query.filter(UserProfile.date_of_birth > max_birth_date)
 
                 # Filter by deal breakers if specified
