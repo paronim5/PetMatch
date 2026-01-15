@@ -240,21 +240,25 @@ class AIService:
         is_nsfw = False
         nsfw_reason = None
         
-        if not result.get("is_safe", True) and result.get("unsafe_category") == "nsfw":
-            is_nsfw = True
-            nsfw_reason = result.get("unsafe_reason") or "Potential NSFW content detected"
+        unsafe_category = result.get("unsafe_category")
+        unsafe_reason = result.get("unsafe_reason")
+        base_is_safe = result.get("is_safe", True)
+        is_animal = result.get("is_animal", False)
         
-        if has_face:
-            quarantine = True
-            rejection_reason = "Human face detected"
+        if unsafe_category == "nsfw" or (not base_is_safe and unsafe_category == "nsfw"):
+            is_nsfw = True
+            nsfw_reason = unsafe_reason or "Potential NSFW or adult content detected"
             result["is_safe"] = False
-        elif not result["is_animal"]:
-            quarantine = True
-            rejection_reason = "No animal detected"
-            result["is_safe"] = False
-        elif is_nsfw:
+        
+        if is_nsfw:
             quarantine = True
             rejection_reason = nsfw_reason
+        elif not is_animal:
+            quarantine = True
+            if has_face:
+                rejection_reason = "Human face detected"
+            else:
+                rejection_reason = "No animal detected"
             result["is_safe"] = False
         
         end_time = time.time()
