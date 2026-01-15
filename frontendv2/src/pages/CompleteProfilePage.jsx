@@ -4,6 +4,7 @@ import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { api } from '../services/api';
 import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
+import { FaShieldAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 const CompleteProfilePage = () => {
   const [formData, setFormData] = useState({
@@ -622,5 +623,4 @@ const CompleteProfilePage = () => {
 };
 
 export default CompleteProfilePage;
-
 
