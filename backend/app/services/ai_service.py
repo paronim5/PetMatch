@@ -112,6 +112,8 @@ class AIService:
                 detected_type = "unknown"
                 confidence = float(score)
                 is_safe = True
+                unsafe_category = None
+                unsafe_reason = None
 
                 for _, label, prob in decoded_preds:
                     label_lower = label.lower()
@@ -128,12 +130,16 @@ class AIService:
                     
                     if any(uk in label_lower for uk in unsafe_keywords):
                         is_safe = False
+                        unsafe_category = "nsfw"
+                        unsafe_reason = "Potential NSFW or adult content detected"
                 
                 return {
                     "is_animal": is_animal_detected,
                     "animal_type": detected_type if is_animal_detected else None,
                     "confidence_score": confidence,
-                    "is_safe": is_safe
+                    "is_safe": is_safe,
+                    "unsafe_category": unsafe_category,
+                    "unsafe_reason": unsafe_reason
                 }
 
         except Exception as e:
@@ -225,24 +231,31 @@ class AIService:
                 "processing_time_ms": (time.time() - start_time) * 1000
             }
 
-        # 2. AI Prediction
         result = self._predict_internal(image_bytes)
         
-        # 3. Face Detection
         has_face = self._detect_faces(image_bytes)
         
-        # 4. Quarantine Logic
         quarantine = False
         rejection_reason = None
+        is_nsfw = False
+        nsfw_reason = None
+        
+        if not result.get("is_safe", True) and result.get("unsafe_category") == "nsfw":
+            is_nsfw = True
+            nsfw_reason = result.get("unsafe_reason") or "Potential NSFW content detected"
         
         if has_face:
             quarantine = True
             rejection_reason = "Human face detected"
-            result["is_safe"] = False  # Mark as unsafe if quarantined
+            result["is_safe"] = False
         elif not result["is_animal"]:
             quarantine = True
             rejection_reason = "No animal detected"
-            result["is_safe"] = False  # Mark as unsafe if quarantined
+            result["is_safe"] = False
+        elif is_nsfw:
+            quarantine = True
+            rejection_reason = nsfw_reason
+            result["is_safe"] = False
         
         end_time = time.time()
         processing_time_ms = (end_time - start_time) * 1000
@@ -255,6 +268,8 @@ class AIService:
             "has_human_face": has_face,
             "quarantine": quarantine,
             "rejection_reason": rejection_reason,
+            "unsafe_category": result.get("unsafe_category"),
+            "unsafe_reason": nsfw_reason if is_nsfw else result.get("unsafe_reason"),
             "processing_time_ms": processing_time_ms
         }
 

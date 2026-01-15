@@ -309,14 +309,28 @@ const CompleteProfilePage = () => {
                       try {
                           const result = await userService.validatePhoto(file);
                           
-                          if (!result.is_safe) {
-                               setPhotoError(result.rejection_reason || result.security_reason || 'Unsafe content detected');
-                               return;
+                          if (result.quarantine) {
+                              const reason =
+                                result.rejection_reason ||
+                                (result.has_human_face
+                                  ? 'Human face detected. Please upload a pet photo without people.'
+                                  : !result.is_animal
+                                    ? 'No animal detected. Please upload a clear pet photo.'
+                                    : result.unsafe_reason ||
+                                      'This photo cannot be used as a profile picture.');
+                              setPhotoError(reason);
+                              return;
                           }
                           
-                          if (result.quarantine) {
-                               setPhotoError(result.rejection_reason || 'Photo rejected by AI');
-                               return;
+                          if (!result.is_safe) {
+                              const unsafeMessage =
+                                result.unsafe_category === 'nsfw'
+                                  ? (result.unsafe_reason ||
+                                     'Potential NSFW content detected. Please use a safe, family-friendly pet photo.')
+                                  : (result.security_reason ||
+                                     'Unsafe content detected. Please try another image.');
+                              setPhotoError(unsafeMessage);
+                              return;
                           }
                       } catch (err) {
                           console.error('AI validation failed:', err);
@@ -608,6 +622,5 @@ const CompleteProfilePage = () => {
 };
 
 export default CompleteProfilePage;
-
 
 

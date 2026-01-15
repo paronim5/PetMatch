@@ -273,16 +273,46 @@ const SignUpPage = () => {
         // 2. Server-side AI check
         try {
             const result = await userService.validatePhoto(file);
-            // Result should contain is_safe, is_animal, has_human_face from my backend update
-            // But if backend returns just result object, we check it.
-            // My backend validate_photo returns the dict from ai_service.validate_image
             
-            if (!result.is_safe) {
-                 setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: 'Unsafe content detected' } }));
+            if (result.quarantine) {
+                const reason =
+                  result.rejection_reason ||
+                  (result.has_human_face
+                    ? 'Human face detected. Please upload a pet photo without people.'
+                    : !result.is_animal
+                      ? 'No animal detected. Please upload a clear pet photo.'
+                      : result.unsafe_reason ||
+                        'This photo cannot be used as a profile picture.');
+                
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: { status: 'error', message: reason }
+                }));
+            } else if (!result.is_safe) {
+                const unsafeMessage =
+                  result.unsafe_category === 'nsfw'
+                    ? (result.unsafe_reason ||
+                       'Potential NSFW content detected. Please use a safe, family-friendly pet photo.')
+                    : (result.security_reason ||
+                       'Unsafe content detected. Please try another image.');
+                
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: { status: 'error', message: unsafeMessage }
+                }));
             } else if (!result.is_animal && !result.has_human_face) {
-                 setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: 'No animal or face detected' } }));
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: {
+                    status: 'error',
+                    message: 'No animal or face detected. Please upload a clear pet photo.'
+                  }
+                }));
             } else {
-                 setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'success', message: 'Valid' } }));
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: { status: 'success', message: 'Valid' }
+                }));
             }
         } catch (err) {
             console.error(err);
