@@ -238,9 +238,11 @@ class AIService:
         if has_face:
             quarantine = True
             rejection_reason = "Human face detected"
+            result["is_safe"] = False  # Mark as unsafe if quarantined
         elif not result["is_animal"]:
             quarantine = True
             rejection_reason = "No animal detected"
+            result["is_safe"] = False  # Mark as unsafe if quarantined
         
         end_time = time.time()
         processing_time_ms = (end_time - start_time) * 1000

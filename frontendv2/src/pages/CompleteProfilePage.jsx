@@ -118,6 +118,11 @@ const CompleteProfilePage = () => {
       
       // 1. Upload Photo if selected
       if (profilePhotoFile) {
+        if (photoError) {
+             // Don't proceed if there is already a validation error
+             return;
+        }
+        
         const isValid = await validateImage(profilePhotoFile);
         if (!isValid.ok) {
             setPhotoError(isValid.message);
@@ -293,9 +298,29 @@ const CompleteProfilePage = () => {
                     setPhotoError('');
                     
                     if (file) {
+                      // 1. Client-side validation
                       const isValid = await validateImage(file);
                       if (!isValid.ok) {
                         setPhotoError(isValid.message);
+                        return;
+                      }
+
+                      // 2. Server-side AI validation
+                      try {
+                          const result = await userService.validatePhoto(file);
+                          
+                          if (!result.is_safe) {
+                               setPhotoError(result.rejection_reason || result.security_reason || 'Unsafe content detected');
+                               return;
+                          }
+                          
+                          if (result.quarantine) {
+                               setPhotoError(result.rejection_reason || 'Photo rejected by AI');
+                               return;
+                          }
+                      } catch (err) {
+                          console.error('AI validation failed:', err);
+                          setPhotoError('Failed to validate photo. Please try again.');
                       }
                     }
                   }}

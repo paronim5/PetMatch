@@ -90,6 +90,7 @@
         photo_url VARCHAR(500) NOT NULL,
         is_primary BOOLEAN DEFAULT FALSE,
         photo_order INTEGER DEFAULT 0,
+        file_hash VARCHAR(64),
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP,
         CONSTRAINT valid_photo_order CHECK (photo_order >= 0)
@@ -455,6 +456,9 @@
 
     -- 2. Add surname to user_profiles table
     ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS surname VARCHAR(100);
+
+    -- 3. Add file_hash to user_photos table
+    ALTER TABLE user_photos ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64);
 
     -- 4. Optional: Create a unique constraint that ignores soft-deleted users
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 

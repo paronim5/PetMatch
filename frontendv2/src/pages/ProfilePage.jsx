@@ -283,11 +283,35 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     setUploadError('');
     if (file) {
+      // 1. Client-side validation
       const isValid = await validateImage(file);
       if (!isValid.ok) {
         setUploadError(isValid.message);
         return;
       }
+
+      // 2. Server-side AI validation
+      try {
+        setUploadError(''); // Clear previous errors
+        // Show loading state if possible, or just proceed
+        const result = await userService.validatePhoto(file);
+        
+        if (!result.is_safe) {
+             setUploadError(result.rejection_reason || result.security_reason || 'Unsafe content detected');
+             return;
+        }
+        
+        if (result.quarantine) {
+             setUploadError(result.rejection_reason || 'Photo rejected by AI');
+             return;
+        }
+
+      } catch (err) {
+        console.error('AI validation failed:', err);
+        setUploadError('Failed to validate photo. Please try again.');
+        return;
+      }
+
       setNewPhotoFile(file);
       setNewPhotoPreview(URL.createObjectURL(file));
     }
