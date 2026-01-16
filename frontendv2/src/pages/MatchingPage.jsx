@@ -232,7 +232,6 @@ const MatchingPage = () => {
   const photos = Array.isArray(currentUser?.photos) ? currentUser.photos : [];
   const activePhotoUrl = photos.length > 0 ? getPhotoUrl(photos[Math.min(photoIndex, photos.length - 1)]?.photo_url) : null;
   const getAge = (dob) => dob ? new Date().getFullYear() - new Date(dob).getFullYear() : '??';
-  const likedYou = currentUser.liked_you;
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-100 relative">
@@ -257,7 +256,8 @@ const MatchingPage = () => {
           onTouchStart={handleDragStart}
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
-          >
+        >
+          {/* Photo Area */}
           <div className="h-3/5 bg-gray-300 flex items-center justify-center relative overflow-hidden" onClick={() => setPhotoIndex((prev) => (photos.length ? (prev + 1) % photos.length : 0))}>
              {activePhotoUrl ? (
                <img src={activePhotoUrl} alt={currentProfile?.first_name} className="w-full h-full object-cover" />
@@ -271,12 +271,6 @@ const MatchingPage = () => {
                 </h2>
                 <p className="text-lg opacity-90 drop-shadow-sm">{currentProfile?.location_city || 'Unknown Location'}</p>
              </div>
-
-             {likedYou && (
-               <div className="absolute top-4 left-4 bg-rose-500/90 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
-                 <FaHeart size={12} /> Liked you
-               </div>
-             )}
 
              {/* Safety Buttons (Report/Block) */}
              <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
