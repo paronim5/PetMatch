@@ -258,6 +258,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setUnreadCount(prev => {
           if (data.count > prev) {
             setHasNewNotifications(true);
+            // Refresh full notification list so the dropdown shows new items,
+            // even if WebSocket is not connected.
+            fetchNotifications();
           }
           return data.count;
         });
