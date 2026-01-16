@@ -16,7 +16,7 @@ const NotificationBell: React.FC = () => {
     }
   };
 
-  const handleNotificationClick = (n: { id: number; is_read: boolean; notification_type: string }) => {
+  const handleNotificationClick = (n: { id: number; is_read: boolean; notification_type: string; related_user_id?: number | null }) => {
       if (!n.is_read) {
           markAsRead(n.id);
       }
@@ -30,7 +30,11 @@ const NotificationBell: React.FC = () => {
             break;
         case 'like':
         case 'super_like':
-            navigate('/history');
+            if (n.related_user_id) {
+              navigate('/history', { state: { focusUserId: n.related_user_id } });
+            } else {
+              navigate('/history');
+            }
             break;
         case 'profile_view':
             navigate('/profile');

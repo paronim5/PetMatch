@@ -2,6 +2,7 @@ from typing import List, Protocol
 from datetime import date
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, not_, desc, or_, text
+from sqlalchemy.exc import ArgumentError
 from geoalchemy2.functions import ST_DWithin
 from app.domain.models import User, UserProfile, Swipe, UserPreferences, UserInterest, Block
 from app.domain.enums import SwipeType, DealBreakerType, SmokingType, DrinkingType
@@ -40,20 +41,34 @@ class LocationBasedMatching(MatchingStrategy):
             
             # 1. Find users who have Liked or Super Liked the current user (Prioritized)
             # We only want those who the current user hasn't swiped on yet
-            liker_subquery = db.query(Swipe.swiper_id).filter(
+            # Order them by most recent like/super_like timestamp (descending)
+            liker_subquery = db.query(
+                Swipe.swiper_id.label("swiper_id"),
+                func.max(Swipe.created_at).label("last_swipe_at"),
+            ).filter(
                 Swipe.swiped_id == user.id,
                 Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like]),
                 Swipe.swiper_id.notin_(swiped_ids),
                 Swipe.swiper_id.notin_(blocked_ids),
-                Swipe.swiper_id.notin_(blocker_ids)
-            ).subquery()
+                Swipe.swiper_id.notin_(blocker_ids),
+            ).group_by(Swipe.swiper_id).subquery()
 
-            likers = db.query(User).options(
-                joinedload(User.photos),
-                joinedload(User.profile)
-            ).join(UserProfile).filter(
-                User.id.in_(liker_subquery)
-            ).limit(limit).all()
+            base_likers_query = (
+                db.query(User)
+                .options(
+                    joinedload(User.photos),
+                    joinedload(User.profile),
+                )
+                .join(UserProfile)
+                .join(liker_subquery, User.id == liker_subquery.c.swiper_id)
+            )
+
+            try:
+                likers_query = base_likers_query.order_by(desc(liker_subquery.c.last_swipe_at))
+            except ArgumentError:
+                likers_query = base_likers_query
+
+            likers = likers_query.limit(limit).all()
             
             logger.info(f"Found {len(likers)} likers for user {user.id}")
 
@@ -83,9 +98,9 @@ class LocationBasedMatching(MatchingStrategy):
                     ).filter(
                     User.id != user.id,
                     User.id.notin_(swiped_ids),
-                    User.id.notin_(liker_subquery), # Exclude likers we already fetched
-                    User.id.notin_(blocked_ids),    # Exclude users I blocked
-                    User.id.notin_(blocker_ids),    # Exclude users who blocked me
+                    User.id.notin_(liker_subquery.c.swiper_id), # Exclude likers we already fetched
+                    User.id.notin_(blocked_ids),                # Exclude users I blocked
+                    User.id.notin_(blocker_ids),                # Exclude users who blocked me
                     ST_DWithin(
                         UserProfile.location,
                         user.profile.location,
