@@ -4,11 +4,17 @@ import { FaBell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 const NotificationBell: React.FC = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, hasNewNotifications, acknowledgeNewNotifications } = useNotification();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const toggleOpen = () => setIsOpen(!isOpen);
+  const toggleOpen = () => {
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+    if (nextOpen) {
+      acknowledgeNewNotifications();
+    }
+  };
 
   const handleNotificationClick = (n: { id: number; is_read: boolean; notification_type: string }) => {
       if (!n.is_read) {
@@ -38,7 +44,7 @@ const NotificationBell: React.FC = () => {
     <div className="relative">
       <button 
         onClick={toggleOpen}
-        className="p-2 text-gray-600 hover:text-rose-600 focus:outline-none"
+        className={`p-2 text-gray-600 hover:text-rose-600 focus:outline-none ${hasNewNotifications ? 'animate-bounce' : ''}`}
       >
         <FaBell size={24} />
         {unreadCount > 0 && (

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch, ANY
 import sys
 from datetime import datetime
 import os
+from starlette.requests import Request
 
 # Mock firebase_admin before importing notification_service
 sys.modules["firebase_admin"] = MagicMock()
@@ -26,11 +27,15 @@ sys.modules["app.core.config"].settings = mock_settings
 from app.services.notification_service import NotificationService
 from app.domain.models import Notification, PushToken, User, UserPreferences, Match, Message, Block
 from app.services.messaging_service import MessagingService
-# from app.services.matching_service import MatchingService # Might need similar mocking
 from app.domain.enums import SwipeType
-
-# Import the matching endpoint
 from app.api.v1.endpoints.matching import create_swipe
+from app.api.v1.endpoints.notifications import (
+    create_notification as create_notification_endpoint,
+    get_unread_notifications as get_unread_notifications_endpoint,
+    mark_notifications_read as mark_notifications_read_endpoint,
+    NotificationCreatePayload,
+    MarkReadPayload,
+)
 
 class TestNotificationService(unittest.TestCase):
     def setUp(self):
@@ -210,6 +215,107 @@ class TestNotificationService(unittest.TestCase):
             message="Swiper liked you!",
             related_user_id=swiper_id
         )
+
+    @patch('app.api.v1.endpoints.notifications.notification_service')
+    def test_create_notification_endpoint_maps_fields(self, mock_notification_service):
+        db = self.db
+        current_user = MagicMock()
+        current_user.id = 1
+        payload = NotificationCreatePayload(
+            receiver_id=2,
+            action_type="super_like",
+            content="Test content",
+            related_match_id=None,
+            related_message_id=None,
+        )
+        mock_notification = MagicMock()
+        mock_notification.id = 10
+        mock_notification.user_id = 2
+        mock_notification.related_user_id = 1
+        mock_notification.notification_type = "super_like"
+        mock_notification.message = "Test content"
+        mock_notification.is_read = False
+        mock_notification.created_at = datetime.utcnow()
+        mock_notification_service.create_notification.return_value = mock_notification
+        result = create_notification_endpoint(payload=payload, db=db, current_user=current_user)
+        mock_notification_service.create_notification.assert_called_once_with(
+            db=db,
+            user_id=2,
+            type="super_like",
+            title="super_like",
+            message="Test content",
+            related_user_id=1,
+            related_match_id=None,
+            related_message_id=None,
+        )
+        assert result.sender_id == 1
+        assert result.receiver_id == 2
+        assert result.action_type == "super_like"
+        assert result.content == "Test content"
+        assert result.is_read is False
+
+    @patch('app.api.v1.endpoints.notifications.notification_service')
+    def test_unread_endpoint_returns_count_and_items(self, mock_notification_service):
+        db = self.db
+        current_user = MagicMock()
+        current_user.id = 5
+        notif1 = MagicMock()
+        notif1.id = 1
+        notif1.user_id = 5
+        notif1.related_user_id = 2
+        notif1.notification_type = "message"
+        notif1.message = "Hello"
+        notif1.is_read = False
+        notif1.created_at = datetime.utcnow()
+        notif2 = MagicMock()
+        notif2.id = 2
+        notif2.user_id = 5
+        notif2.related_user_id = 3
+        notif2.notification_type = "super_like"
+        notif2.message = "Hi"
+        notif2.is_read = False
+        notif2.created_at = datetime.utcnow()
+        mock_notification_service.get_unread_notifications.return_value = [notif1, notif2]
+        mock_notification_service.get_unread_count.return_value = 2
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/notifications/unread",
+            "headers": [],
+            "client": ("testclient", 12345),
+        }
+        request = Request(scope)
+        result = get_unread_notifications_endpoint(
+            request=request,
+            user_id=None,
+            limit=10,
+            db=db,
+            current_user=current_user,
+        )
+        mock_notification_service.get_unread_notifications.assert_called_once()
+        mock_notification_service.get_unread_count.assert_called_once_with(db, user_id=5)
+        assert result.count == 2
+        assert len(result.notifications) == 2
+        assert result.notifications[0].receiver_id == 5
+
+    @patch('app.api.v1.endpoints.notifications.notification_service')
+    def test_mark_notifications_read_endpoint(self, mock_notification_service):
+        db = self.db
+        current_user = MagicMock()
+        current_user.id = 7
+        mock_notification_service.mark_notifications_as_read.return_value = 3
+        payload = MarkReadPayload(notification_ids=[1, 2, 3])
+        result = mark_notifications_read_endpoint(
+            payload=payload,
+            db=db,
+            current_user=current_user,
+        )
+        mock_notification_service.mark_notifications_as_read.assert_called_once_with(
+            db=db,
+            user_id=7,
+            notification_ids=[1, 2, 3],
+        )
+        assert result.updated_count == 3
 
 if __name__ == '__main__':
     unittest.main()

@@ -142,6 +142,15 @@ class NotificationService:
             Notification.deleted_at.is_(None)
         ).count()
 
+    def get_unread_notifications(self, db: Session, user_id: int, limit: int = 10) -> List[Notification]:
+        return db.query(Notification).filter(
+            Notification.user_id == user_id,
+            Notification.is_read == False,
+            Notification.deleted_at.is_(None)
+        ).order_by(
+            Notification.created_at.desc()
+        ).limit(limit).all()
+
     def mark_as_read(self, db: Session, user_id: int, notification_id: int) -> Optional[Notification]:
         notification = db.query(Notification).filter(
             Notification.id == notification_id,
@@ -168,5 +177,19 @@ class NotificationService:
             Notification.is_read == False
         ).update({"is_read": True, "read_at": datetime.utcnow()})
         db.commit()
+
+    def mark_notifications_as_read(self, db: Session, user_id: int, notification_ids: List[int]) -> int:
+        if not notification_ids:
+            return 0
+        updated = db.query(Notification).filter(
+            Notification.user_id == user_id,
+            Notification.id.in_(notification_ids),
+            Notification.is_read == False
+        ).update(
+            {"is_read": True, "read_at": datetime.utcnow()},
+            synchronize_session=False
+        )
+        db.commit()
+        return updated
 
 notification_service = NotificationService()
