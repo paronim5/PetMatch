@@ -151,10 +151,11 @@ def create_swipe(
                         message=msg_body,
                         related_user_id=current_user.id
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to send like/super_like notification: {e}", exc_info=True)
 
             # Check if the other user already liked current user -> create match
+
             other_swipe = db.query(SwipeModel).filter(
                 SwipeModel.swiper_id == swipe_in.swiped_id,
                 SwipeModel.swiped_id == current_user.id,
@@ -206,10 +207,12 @@ def create_swipe(
                                     related_user_id=current_user.id,
                                     related_match_id=match.id
                                 )
-                        except Exception:
-                            pass
-                    except Exception:
-                        pass
+                        except Exception as e:
+                            logger.error(f"Failed to notify other user {swipe_in.swiped_id} of match: {e}", exc_info=True)
+                            
+                    except Exception as e:
+                        logger.error(f"Failed to process match notifications: {e}", exc_info=True)
+
 
         return swipe
     except HTTPException:
