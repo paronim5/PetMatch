@@ -23,8 +23,7 @@ const firebaseConfig = {
 
 };
 
-// Initialize Firebase
-let messaging: any = null;
+let messaging: ReturnType<typeof getMessaging> | null = null;
 
 try {
   const app = initializeApp(firebaseConfig);

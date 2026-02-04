@@ -38,6 +38,10 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+type HistoryLocationState = {
+  focusUserId: number;
+};
+
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -130,7 +134,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       ws.current.onmessage = (event) => {
         try {
-          const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string } } };
+          const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string; related_user_id?: number | null } } };
           
           if (parsed.type === 'new_notification' && parsed.data?.notification) {
             const incoming = parsed.data.notification;
@@ -149,7 +153,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             // Show Toast
             let onClick: (() => void) | undefined;
             if (incoming.type === 'like' || incoming.type === 'super_like') {
-                onClick = () => navigate('/history');
+                const targetUserId = incoming.related_user_id;
+                onClick = () => {
+                  if (targetUserId) {
+                    navigate('/history', { state: { focusUserId: targetUserId } as HistoryLocationState });
+                  } else {
+                    navigate('/history');
+                  }
+                };
             } else if (incoming.type === 'match') {
                 onClick = () => navigate('/chat'); // Or /matching
             } else if (incoming.type === 'message') {
@@ -179,7 +190,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             ws.current.onclose = () => setIsConnected(false);
             ws.current.onmessage = (event) => {
               try {
-                const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string } } };
+                const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string; related_user_id?: number | null } } };
                 if (parsed.type === 'new_notification' && parsed.data?.notification) {
                   const incoming = parsed.data.notification;
                   const notif: NotificationItem = {
@@ -196,7 +207,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                   
                   let onClick: (() => void) | undefined;
                   if (incoming.type === 'like' || incoming.type === 'super_like') {
-                      onClick = () => navigate('/history');
+                      const targetUserId = incoming.related_user_id;
+                      onClick = () => {
+                        if (targetUserId) {
+                          navigate('/history', { state: { focusUserId: targetUserId } as HistoryLocationState });
+                        } else {
+                          navigate('/history');
+                        }
+                      };
                   } else if (incoming.type === 'match') {
                       onClick = () => navigate('/chat');
                   } else if (incoming.type === 'message') {
