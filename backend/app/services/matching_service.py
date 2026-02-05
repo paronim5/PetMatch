@@ -33,13 +33,13 @@ class LocationBasedMatching(MatchingStrategy):
             max_distance_meters = max_distance_km * 1000
             
             # Get IDs of users already swiped by this user
-            swiped_ids = db.query(Swipe.swiped_id).filter(Swipe.swiper_id == user.id).subquery()
+            swiped_ids_query = db.query(Swipe.swiped_id).filter(Swipe.swiper_id == user.id)
             
             # Get IDs of users blocked by this user or who blocked this user
-            blocked_ids = db.query(Block.blocked_id).filter(Block.blocker_id == user.id).subquery()
-            blocker_ids = db.query(Block.blocker_id).filter(Block.blocked_id == user.id).subquery()
+            blocked_ids_query = db.query(Block.blocked_id).filter(Block.blocker_id == user.id)
+            blocker_ids_query = db.query(Block.blocker_id).filter(Block.blocked_id == user.id)
             
-                # 1. Find users who have Liked or Super Liked the current user (Prioritized)
+            # 1. Find users who have Liked or Super Liked the current user (Prioritized)
             # We only want those who the current user hasn't swiped on yet
             # Order them by most recent like/super_like timestamp (descending)
             liker_subquery = db.query(
@@ -47,9 +47,9 @@ class LocationBasedMatching(MatchingStrategy):
             ).filter(
                 Swipe.swiped_id == user.id,
                 Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like]),
-                Swipe.swiper_id.notin_(swiped_ids),
-                Swipe.swiper_id.notin_(blocked_ids),
-                Swipe.swiper_id.notin_(blocker_ids),
+                Swipe.swiper_id.notin_(swiped_ids_query),
+                Swipe.swiper_id.notin_(blocked_ids_query),
+                Swipe.swiper_id.notin_(blocker_ids_query),
             ).group_by(Swipe.swiper_id).subquery()
 
             base_likers_query = (
@@ -83,10 +83,10 @@ class LocationBasedMatching(MatchingStrategy):
 
             if remaining_limit > 0:
                 # Create a simple list of liker IDs to exclude
-                liker_ids_subquery = db.query(Swipe.swiper_id).filter(
+                liker_ids_query = db.query(Swipe.swiper_id).filter(
                     Swipe.swiped_id == user.id,
                     Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like])
-                ).subquery()
+                )
 
                 query = db.query(
                         User
@@ -97,10 +97,10 @@ class LocationBasedMatching(MatchingStrategy):
                     ).outerjoin(UserInterest, and_(UserInterest.user_id == User.id, UserInterest.interest_id.in_(self_interest_ids))
                     ).filter(
                     User.id != user.id,
-                    User.id.notin_(swiped_ids),
-                    User.id.notin_(liker_ids_subquery),         # Exclude likers using a clean subquery
-                    User.id.notin_(blocked_ids),                # Exclude users I blocked
-                    User.id.notin_(blocker_ids),                # Exclude users who blocked me
+                    User.id.notin_(swiped_ids_query),
+                    User.id.notin_(liker_ids_query),            # Exclude likers using standard query
+                    User.id.notin_(blocked_ids_query),          # Exclude users I blocked
+                    User.id.notin_(blocker_ids_query),          # Exclude users who blocked me
                     ST_DWithin(
                         UserProfile.location,
                         user.profile.location,
