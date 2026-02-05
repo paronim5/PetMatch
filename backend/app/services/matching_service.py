@@ -39,12 +39,11 @@ class LocationBasedMatching(MatchingStrategy):
             blocked_ids = db.query(Block.blocked_id).filter(Block.blocker_id == user.id).subquery()
             blocker_ids = db.query(Block.blocker_id).filter(Block.blocked_id == user.id).subquery()
             
-            # 1. Find users who have Liked or Super Liked the current user (Prioritized)
+                # 1. Find users who have Liked or Super Liked the current user (Prioritized)
             # We only want those who the current user hasn't swiped on yet
             # Order them by most recent like/super_like timestamp (descending)
             liker_subquery = db.query(
-                Swipe.swiper_id.label("swiper_id"),
-                func.max(Swipe.created_at).label("last_swipe_at"),
+                Swipe.swiper_id
             ).filter(
                 Swipe.swiped_id == user.id,
                 Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like]),
@@ -63,12 +62,7 @@ class LocationBasedMatching(MatchingStrategy):
                 .join(liker_subquery, User.id == liker_subquery.c.swiper_id)
             )
 
-            try:
-                likers_query = base_likers_query.order_by(desc(liker_subquery.c.last_swipe_at))
-            except ArgumentError:
-                likers_query = base_likers_query
-
-            likers = likers_query.limit(limit).all()
+            likers = base_likers_query.limit(limit).all()
             
             logger.info(f"Found {len(likers)} likers for user {user.id}")
 
@@ -88,6 +82,12 @@ class LocationBasedMatching(MatchingStrategy):
             standard_matches = []
 
             if remaining_limit > 0:
+                # Create a simple list of liker IDs to exclude
+                liker_ids_subquery = db.query(Swipe.swiper_id).filter(
+                    Swipe.swiped_id == user.id,
+                    Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like])
+                ).subquery()
+
                 query = db.query(
                         User
                     ).options(
@@ -98,7 +98,7 @@ class LocationBasedMatching(MatchingStrategy):
                     ).filter(
                     User.id != user.id,
                     User.id.notin_(swiped_ids),
-                    User.id.notin_(liker_subquery.c.swiper_id), # Exclude likers we already fetched
+                    User.id.notin_(liker_ids_subquery),         # Exclude likers using a clean subquery
                     User.id.notin_(blocked_ids),                # Exclude users I blocked
                     User.id.notin_(blocker_ids),                # Exclude users who blocked me
                     ST_DWithin(
