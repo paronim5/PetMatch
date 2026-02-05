@@ -50,7 +50,7 @@ class LocationBasedMatching(MatchingStrategy):
                 Swipe.swiper_id.notin_(swiped_ids_query),
                 Swipe.swiper_id.notin_(blocked_ids_query),
                 Swipe.swiper_id.notin_(blocker_ids_query),
-            ).group_by(Swipe.swiper_id).subquery()
+            ).subquery()
 
             base_likers_query = (
                 db.query(User)
