@@ -21,7 +21,7 @@ class AuthService:
         access_token = create_access_token(data={"sub": user.email})
         
         # Check profile status
-        profile_incomplete = not user.profile or not user.profile.date_of_birth
+        profile_incomplete = not user.profile or not user.profile.date_of_birth or not user.phone_number_hash
         
         return Token(access_token=access_token, token_type="bearer", profile_incomplete=profile_incomplete)
 
