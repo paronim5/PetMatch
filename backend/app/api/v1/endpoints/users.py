@@ -116,7 +116,13 @@ def update_user_profile(
     profile_data = profile_in.model_dump(exclude_unset=True)
     latitude = profile_data.pop("latitude", None)
     longitude = profile_data.pop("longitude", None)
+    phone_number = profile_data.pop("phone_number", None)
     
+    if phone_number:
+        # Update phone number hash on user model
+        current_user.phone_number_hash = hashlib.sha256(phone_number.encode("utf-8")).hexdigest()
+        db.add(current_user)
+
     if not current_user.profile:
         logger.info(f"Creating new profile record for user {current_user.id}")
         db_profile = UserProfileModel(**profile_data, user_id=current_user.id)

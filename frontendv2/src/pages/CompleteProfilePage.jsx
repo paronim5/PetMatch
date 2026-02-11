@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { api } from '../services/api';
 import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
-import { FaShieldAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaShieldAlt, FaCheckCircle, FaTimesCircle, FaMapMarkerAlt, FaUser, FaCamera, FaHeart, FaCog } from 'react-icons/fa';
 
 const CompleteProfilePage = () => {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     surname: '',
@@ -15,7 +18,8 @@ const CompleteProfilePage = () => {
     location_city: '',
     latitude: '',
     longitude: '',
-    // New fields
+    phone_country_code: '+420',
+    phone_number: '',
     bio: '',
     height_value: '',
     height_unit: 'cm',
@@ -25,54 +29,86 @@ const CompleteProfilePage = () => {
     smoking: 'never',
     drinking: 'never',
     interests: '',
-    // Preferences
     min_age: 18,
     max_age: 100,
     max_distance: 50,
     preferred_genders: ['female', 'male']
   });
-  const [address, setAddress] = useState(null);
-  const [loading, setLoading] = useState(false);
+  
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [photoError, setPhotoError] = useState('');
+  const [address, setAddress] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = await userService.getMe();
+        if (user.profile) {
+            setFormData(prev => ({
+                ...prev,
+                first_name: user.profile.first_name || '',
+                surname: user.profile.surname || '',
+                date_of_birth: user.profile.date_of_birth || '',
+                gender: user.profile.gender || '',
+                location_city: user.profile.location_city || '',
+                bio: user.profile.bio || '',
+                height_value: user.profile.height_value || '',
+                height_unit: user.profile.height_unit || 'cm',
+                education: user.profile.education || '',
+                occupation: user.profile.occupation || '',
+                relationship_goal: user.profile.relationship_goal || 'relationship',
+                smoking: user.profile.smoking || 'never',
+                drinking: user.profile.drinking || 'never'
+            }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    // Clear error when field changes
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: null });
+    }
   };
 
   const handleAddressSelect = (option) => {
-      setAddress(option);
-      if (option && window.google) {
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ placeId: option.value.place_id }, (results, status) => {
-              if (status === 'OK' && results[0]) {
-                  const lat = results[0].geometry.location.lat();
-                  const lng = results[0].geometry.location.lng();
-                  
-                  const cityComponent = results[0].address_components.find(
-                      component => component.types.includes('locality')
-                  );
-                  const city = cityComponent ? cityComponent.long_name : option.label;
-                  
-                  setFormData(prev => ({
-                      ...prev,
-                      location_city: city,
-                      latitude: lat,
-                      longitude: lng
-                  }));
-              } else {
-                  console.error('Geocode failed: ' + status);
-              }
-          });
-      }
+    setAddress(option);
+    if (option && window.google) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ placeId: option.value.place_id }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const lat = results[0].geometry.location.lat();
+          const lng = results[0].geometry.location.lng();
+          
+          const cityComponent = results[0].address_components.find(
+            component => component.types.includes('locality')
+          );
+          const city = cityComponent ? cityComponent.long_name : option.label;
+          
+          setFormData(prev => ({
+            ...prev,
+            location_city: city,
+            latitude: lat,
+            longitude: lng
+          }));
+        } else {
+          console.error('Geocode failed: ' + status);
+        }
+      });
+    }
   };
 
   const handleLocationDetect = () => {
-    // Check for secure context (HTTPS or localhost)
     if (!window.isSecureContext) {
-      alert("Location detection requires a secure connection (HTTPS) or localhost. Please enter your location manually or ensure you are using a secure connection.");
+      alert("Location detection requires a secure connection (HTTPS) or localhost.");
       return;
     }
 
@@ -90,71 +126,84 @@ const CompleteProfilePage = () => {
         },
         (error) => {
           console.error("Error getting location", error);
-          let msg = "Could not detect location.";
-          if (error.code === 1) {
-            msg += " Permission denied. Please allow location access in your browser settings.";
-          } else if (error.code === 2) {
-            msg += " Position unavailable.";
-          } else if (error.code === 3) {
-            msg += " Timeout.";
-          }
-          alert(msg + " Please enter manually.");
+          alert("Could not detect location. Please enter manually.");
           setLoading(false);
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     } else {
       alert("Geolocation is not supported by this browser.");
     }
   };
 
+  const validateStep = (currentStep) => {
+    const errors = {};
+    if (currentStep === 1) {
+      if (!formData.first_name) errors.first_name = 'First name is required';
+      if (!formData.date_of_birth) errors.date_of_birth = 'Date of birth is required';
+      if (!formData.gender) errors.gender = 'Gender is required';
+      if (!formData.phone_number) errors.phone_number = 'Phone number is required';
+      else if (formData.phone_number.replace(/[^0-9]/g, '').length < 6) {
+        errors.phone_number = 'Please enter a valid phone number';
+      }
+      
+      if (formData.date_of_birth) {
+        const age = new Date().getFullYear() - new Date(formData.date_of_birth).getFullYear();
+        if (age < 18) errors.date_of_birth = 'You must be at least 18 years old';
+      }
+    }
+    
+    if (currentStep === 2) {
+      if (!profilePhotoFile && !photoError) {
+        // Photo is highly recommended but maybe not strictly required if they already have one?
+        // For Google login, they might have one, but we want a pet photo.
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(step + 1);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const prevStep = () => {
+    setStep(step - 1);
+    window.scrollTo(0, 0);
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!validateStep(step)) return;
+
+    setLoading(true);
+    setSubmitStatus('Completing your profile...');
+    
     try {
       const token = localStorage.getItem('token');
-      
-      // 1. Upload Photo if selected
-      if (profilePhotoFile) {
-        if (photoError) {
-             // Don't proceed if there is already a validation error
-             return;
+      const sanitizedLocal = formData.phone_number.replace(/[^0-9]/g, '');
+      const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
+
+      // 1. Upload Photo
+      if (profilePhotoFile && !photoError) {
+        try {
+          await userService.uploadPhoto(profilePhotoFile);
+        } catch (photoError) {
+          console.error('Photo upload failed:', photoError);
         }
-        
-        const isValid = await validateImage(profilePhotoFile);
-        if (!isValid.ok) {
-            setPhotoError(isValid.message);
-            return;
-        }
-        await userService.uploadPhoto(profilePhotoFile);
       }
 
-      // Validate Height
-      if (formData.height_value) {
-          const hVal = parseInt(formData.height_value);
-          if (formData.height_unit === 'cm') {
-               if (hVal < 100 || hVal > 250) {
-                   alert('Height must be between 100 and 250 cm');
-                   return;
-               }
-          } else if (formData.height_unit === 'feet_inches') {
-               if (hVal < 36 || hVal > 96) {
-                   alert('Height must be between 36 and 96 inches');
-                   return;
-               }
-          }
-      }
-
-      // 2. Prepare Profile Payload
+      // 2. Update Profile
       let finalBio = formData.bio;
       if (formData.interests) {
         finalBio += `\n\nInterests: ${formData.interests}`;
       }
 
-      const payload = {
+      const profilePayload = {
         first_name: formData.first_name,
         surname: formData.surname || null,
         date_of_birth: formData.date_of_birth,
@@ -168,11 +217,12 @@ const CompleteProfilePage = () => {
         relationship_goal: formData.relationship_goal,
         smoking: formData.smoking,
         drinking: formData.drinking,
+        phone_number: phoneE164,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null
       };
 
-      await api.put('/users/me/profile', payload, token);
+      await api.put('/users/me/profile', profilePayload, token);
 
       // 3. Update Preferences
       await userService.updatePreferences({
@@ -182,445 +232,330 @@ const CompleteProfilePage = () => {
         preferred_genders: formData.preferred_genders
       });
 
-      navigate('/matching');
+      setSubmitStatus('Success! Redirecting...');
+      setTimeout(() => navigate('/matching'), 1500);
     } catch (error) {
       console.error('Profile completion failed:', error);
+      setSubmitStatus('');
       alert('Failed to complete profile: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl w-full space-y-8 bg-white p-8 rounded-lg shadow">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Complete Your Profile
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Tell us more about yourself to find better matches.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-orange-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            {[1, 2, 3, 4].map((s) => (
+              <div 
+                key={s}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                  step >= s ? 'bg-rose-500 text-white' : 'bg-gray-200 text-gray-500'
+                }`}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full">
+            <div 
+              className="h-full bg-rose-500 rounded-full transition-all duration-300"
+              style={{ width: `${((step - 1) / 3) * 100}%` }}
+            />
+          </div>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          
-          {/* Basic Info */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Basic Info</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">First Name</label>
-                    <input
-                        id="first_name"
+
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-rose-500 p-6 text-white text-center">
+            <h2 className="text-2xl font-bold">Complete Your Profile</h2>
+            <p className="text-rose-100">Help us find the perfect match for your pet</p>
+          </div>
+
+          <div className="p-8">
+            <form onSubmit={handleSubmit}>
+              {/* Step 1: Basic Info */}
+              {step === 1 && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2 text-rose-500 font-semibold mb-4">
+                    <FaUser /> <span>Basic Information</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name*</label>
+                      <input
                         name="first_name"
                         type="text"
-                        required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
                         value={formData.first_name}
                         onChange={handleChange}
-                    />
-                </div>
-                <div>
-                    <label htmlFor="surname" className="block text-sm font-medium text-gray-700">Last Name</label>
-                    <input
-                        id="surname"
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 ${fieldErrors.first_name ? 'border-red-500' : 'border-gray-300'}`}
+                      />
+                      {fieldErrors.first_name && <p className="text-red-500 text-xs mt-1">{fieldErrors.first_name}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                      <input
                         name="surname"
                         type="text"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
                         value={formData.surname}
                         onChange={handleChange}
-                    />
-                </div>
-                <div>
-                    <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                    <input
-                        id="date_of_birth"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth*</label>
+                      <input
                         name="date_of_birth"
                         type="date"
-                        required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
                         value={formData.date_of_birth}
                         onChange={handleChange}
-                    />
-                </div>
-                <div>
-                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Gender</label>
-                    <select
-                        id="gender"
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 ${fieldErrors.date_of_birth ? 'border-red-500' : 'border-gray-300'}`}
+                      />
+                      {fieldErrors.date_of_birth && <p className="text-red-500 text-xs mt-1">{fieldErrors.date_of_birth}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Gender*</label>
+                      <select
                         name="gender"
-                        required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
                         value={formData.gender}
                         onChange={handleChange}
-                    >
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 ${fieldErrors.gender ? 'border-red-500' : 'border-gray-300'}`}
+                      >
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                         <option value="non_binary">Non-binary</option>
                         <option value="other">Other</option>
-                    </select>
-                </div>
-            </div>
-          </div>
-
-          {/* Profile Picture */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-             <h3 className="text-lg font-medium text-gray-900">Profile Picture</h3>
-             
-             {/* Upload Guidelines */}
-              <div className="mb-4 p-4 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100">
-                <p className="font-bold mb-3 flex items-center"><FaShieldAlt className="mr-2"/> Strict Content Guidelines:</p>
-                
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="bg-white p-3 rounded border border-green-200">
-                      <p className="font-bold text-green-700 mb-2 flex items-center"><FaCheckCircle className="mr-1"/> ACCEPTED</p>
-                      <ul className="space-y-1 text-gray-600 text-xs">
-                        <li>• Clear animal photos</li>
-                        <li>• Cats, dogs, birds, etc.</li>
-                        <li>• Well-lit & high quality</li>
-                      </ul>
-                   </div>
-                   <div className="bg-white p-3 rounded border border-red-200">
-                      <p className="font-bold text-red-700 mb-2 flex items-center"><FaTimesCircle className="mr-1"/> REJECTED</p>
-                      <ul className="space-y-1 text-gray-600 text-xs">
-                        <li>• Human faces (Strict)</li>
-                        <li>• Blurry or dark photos</li>
-                        <li>• Non-animal objects</li>
-                      </ul>
-                   </div>
-                </div>
-              </div>
-
-             <div>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0] || null;
-                    setProfilePhotoFile(file);
-                    setPhotoError('');
-                    
-                    if (file) {
-                      // 1. Client-side validation
-                      const isValid = await validateImage(file);
-                      if (!isValid.ok) {
-                        setPhotoError(isValid.message);
-                        return;
-                      }
-
-                      // 2. Server-side AI validation
-                      try {
-                          const result = await userService.validatePhoto(file);
-                          
-                          if (result.quarantine) {
-                              const reason =
-                                result.rejection_reason ||
-                                (result.has_human_face
-                                  ? 'Human face detected. Please upload a pet photo without people.'
-                                  : !result.is_animal
-                                    ? 'No animal detected. Please upload a clear pet photo.'
-                                    : result.unsafe_reason ||
-                                      'This photo cannot be used as a profile picture.');
-                              setPhotoError(reason);
-                              return;
-                          }
-                          
-                          if (!result.is_safe) {
-                              const unsafeMessage =
-                                result.unsafe_category === 'nsfw'
-                                  ? (result.unsafe_reason ||
-                                     'Potential NSFW content detected. Please use a safe, family-friendly pet photo.')
-                                  : (result.security_reason ||
-                                     'Unsafe content detected. Please try another image.');
-                              setPhotoError(unsafeMessage);
-                              return;
-                          }
-                      } catch (err) {
-                          console.error('AI validation failed:', err);
-                          setPhotoError('Failed to validate photo. Please try again.');
-                      }
-                    }
-                  }}
-                  className="mt-1 block w-full text-sm"
-                />
-                {photoError && <p className="text-xs text-red-600 mt-1">{photoError}</p>}
-                {profilePhotoFile && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Selected: {profilePhotoFile.name} ({(profilePhotoFile.size/1024/1024).toFixed(2)} MB)
-                  </p>
-                )}
-              </div>
-          </div>
-
-          {/* Lifestyle & Work */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-             <h3 className="text-lg font-medium text-gray-900">Lifestyle & Work</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Height</label>
-                    <div className="flex gap-2">
+                      </select>
+                      {fieldErrors.gender && <p className="text-red-500 text-xs mt-1">{fieldErrors.gender}</p>}
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number*</label>
+                      <div className="flex gap-2">
+                        <select
+                          name="phone_country_code"
+                          value={formData.phone_country_code}
+                          onChange={handleChange}
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                        >
+                          <option value="+420">CZ (+420)</option>
+                          <option value="+1">US (+1)</option>
+                          <option value="+44">UK (+44)</option>
+                        </select>
                         <input
-                            type="number"
-                            name="height_value"
-                            value={formData.height_value}
-                            onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                            placeholder="Height"
+                          name="phone_number"
+                          type="tel"
+                          placeholder="777 123 456"
+                          value={formData.phone_number}
+                          onChange={handleChange}
+                          className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 ${fieldErrors.phone_number ? 'border-red-500' : 'border-gray-300'}`}
+                        />
+                      </div>
+                      {fieldErrors.phone_number && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone_number}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Photo */}
+              {step === 2 && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2 text-rose-500 font-semibold mb-4">
+                    <FaCamera /> <span>Profile Picture</span>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                    <p className="font-bold flex items-center mb-2"><FaShieldAlt className="mr-2"/> Safety Guidelines</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white p-2 rounded border border-green-200 text-green-700">
+                        <p className="font-bold flex items-center mb-1"><FaCheckCircle className="mr-1"/> DO</p>
+                        <ul className="text-xs"><li>Pet photos</li><li>High quality</li></ul>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-red-200 text-red-700">
+                        <p className="font-bold flex items-center mb-1"><FaTimesCircle className="mr-1"/> DON'T</p>
+                        <ul className="text-xs"><li>Human faces</li><li>Blurry images</li></ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setProfilePhotoFile(file);
+                          setPhotoError('');
+                          const validation = await validateImage(file);
+                          if (!validation.ok) setPhotoError(validation.message);
+                          else {
+                            try {
+                              const ai = await userService.validatePhoto(file);
+                              if (ai.quarantine) setPhotoError(ai.rejection_reason || 'Invalid photo');
+                            } catch (err) { console.error(err); }
+                          }
+                        }
+                      }}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center">
+                      <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mb-4">
+                        <FaCamera size={40} />
+                      </div>
+                      <span className="text-rose-500 font-semibold">Click to upload photo</span>
+                      <span className="text-gray-400 text-xs mt-1">JPG, PNG, WebP (Max 5MB)</span>
+                    </label>
+                  </div>
+                  {photoError && <p className="text-red-500 text-sm text-center">{photoError}</p>}
+                  {profilePhotoFile && <p className="text-green-600 text-sm text-center">Selected: {profilePhotoFile.name}</p>}
+                </div>
+              )}
+
+              {/* Step 3: Lifestyle & Bio */}
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2 text-rose-500 font-semibold mb-4">
+                    <FaHeart /> <span>Lifestyle & About</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Height</label>
+                      <div className="flex gap-2">
+                        <input
+                          name="height_value"
+                          type="number"
+                          value={formData.height_value}
+                          onChange={handleChange}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
                         />
                         <select
-                            name="height_unit"
-                            value={formData.height_unit}
-                            onChange={handleChange}
-                            className="mt-1 block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
+                          name="height_unit"
+                          value={formData.height_unit}
+                          onChange={handleChange}
+                          className="w-20 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
                         >
-                            <option value="cm">cm</option>
-                            <option value="feet_inches">ft</option>
+                          <option value="cm">cm</option>
+                          <option value="feet_inches">in</option>
                         </select>
+                      </div>
                     </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Education</label>
-                    <input
-                        type="text"
-                        name="education"
-                        value={formData.education}
-                        onChange={handleChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                        placeholder="Highest degree/school"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Occupation</label>
-                    <input
-                        type="text"
-                        name="occupation"
-                        value={formData.occupation}
-                        onChange={handleChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                        placeholder="Current job"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Relationship Goal</label>
-                    <select
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Relationship Goal</label>
+                      <select
                         name="relationship_goal"
                         value={formData.relationship_goal}
                         onChange={handleChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                    >
-                        <option value="relationship">Relationship</option>
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                      >
+                        <option value="relationship">Long-term</option>
                         <option value="casual">Casual</option>
                         <option value="friendship">Friendship</option>
-                        <option value="undecided">Undecided</option>
-                    </select>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                      <textarea
+                        name="bio"
+                        rows="4"
+                        value={formData.bio}
+                        onChange={handleChange}
+                        placeholder="Tell us about your pet..."
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Smoking</label>
-                  <select
-                    name="smoking"
-                    value={formData.smoking}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                  >
-                    <option value="never">Never</option>
-                    <option value="occasionally">Occasionally</option>
-                    <option value="regularly">Regularly</option>
-                    <option value="prefer_not_to_say">Prefer not to say</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Drinking</label>
-                  <select
-                    name="drinking"
-                    value={formData.drinking}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                  >
-                    <option value="never">Never</option>
-                    <option value="occasionally">Occasionally</option>
-                    <option value="regularly">Regularly</option>
-                    <option value="prefer_not_to_say">Prefer not to say</option>
-                  </select>
-                </div>
-             </div>
-             <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700">Interests</label>
-                <input
-                    type="text"
-                    name="interests"
-                    value={formData.interests}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                    placeholder="e.g. Hiking, Photography, Cooking"
-                />
-             </div>
-             <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700">Bio</label>
-                <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    rows="3"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                    placeholder="I love dogs and hiking..."
-                ></textarea>
-             </div>
-          </div>
+              )}
 
-          {/* Location */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Location</h3>
-            <div>
-              <label htmlFor="location_city" className="block text-sm font-medium text-gray-700">City</label>
-              <div className="mt-1">
-                  <GooglePlacesAutocomplete
-                      apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+              {/* Step 4: Preferences & Location */}
+              {step === 4 && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-2 text-rose-500 font-semibold mb-4">
+                    <FaCog /> <span>Preferences & Location</span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700">Location</label>
+                    <GooglePlacesAutocomplete
                       selectProps={{
-                          value: address,
-                          onChange: handleAddressSelect,
-                          placeholder: 'Start typing your city...',
-                          styles: {
-                              control: (provided) => ({
-                                  ...provided,
-                                  borderColor: '#d1d5db',
-                                  borderRadius: '0.375rem',
-                                  boxShadow: 'none',
-                                  '&:hover': {
-                                      borderColor: '#e11d48'
-                                  }
-                              }),
-                              input: (provided) => ({
-                                  ...provided,
-                                  color: '#374151'
-                              }),
-                              option: (provided, state) => ({
-                                  ...provided,
-                                  backgroundColor: state.isFocused ? '#fff1f2' : 'white',
-                                  color: '#374151'
-                              })
-                          }
-                      }}
-                  />
-              </div>
-              <input type="hidden" name="location_city" value={formData.location_city} />
-            </div>
-            
-             <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label htmlFor="latitude" className="block text-sm font-medium text-gray-700">Latitude</label>
-                     <input
-                        name="latitude"
-                        type="number"
-                        step="any"
-                        placeholder="Latitude"
-                        value={formData.latitude}
-                        onChange={handleChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                     />
-                 </div>
-                 <div>
-                    <label htmlFor="longitude" className="block text-sm font-medium text-gray-700">Longitude</label>
-                     <input
-                        name="longitude"
-                        type="number"
-                        step="any"
-                        placeholder="Longitude"
-                        value={formData.longitude}
-                        onChange={handleChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
-                     />
-                 </div>
-             </div>
-            <div>
-                <button type="button" onClick={handleLocationDetect} disabled={loading} className="text-sm text-rose-600 hover:text-rose-500">
-                    {loading ? "Detecting..." : "Use my current location"}
-                </button>
-            </div>
-          </div>
-
-          {/* Match Preferences */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Match Preferences</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Min Age</label>
-                <input
-                  type="number"
-                  min={18}
-                  name="min_age"
-                  value={formData.min_age}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Max Age</label>
-                <input
-                  type="number"
-                  max={100}
-                  name="max_age"
-                  value={formData.max_age}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Max Distance (km)</label>
-                <input
-                  type="number"
-                  min={1}
-                  name="max_distance"
-                  value={formData.max_distance}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500"
-                />
-              </div>
-            </div>
-            <div>
-              <span className="block text-sm font-medium text-gray-700 mb-2">Preferred Genders</span>
-              <div className="flex gap-4 flex-wrap">
-                {['male','female','non_binary','other'].map(g => (
-                  <label key={g} className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={formData.preferred_genders.includes(g)}
-                      onChange={(e) => {
-                        let next = [...formData.preferred_genders];
-                        if (e.target.checked) {
-                          if (!next.includes(g)) next.push(g);
-                        } else {
-                          next = next.filter(x => x !== g);
-                        }
-                        setFormData({ ...formData, preferred_genders: next });
+                        value: address,
+                        onChange: handleAddressSelect,
+                        placeholder: 'Search for your city...',
+                        className: 'w-full'
                       }}
                     />
-                    <span>{g.replace('_',' ')}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+                    <button
+                      type="button"
+                      onClick={handleLocationDetect}
+                      className="flex items-center space-x-2 text-rose-500 text-sm font-medium hover:text-rose-600"
+                    >
+                      <FaMapMarkerAlt /> <span>Use current location</span>
+                    </button>
+                  </div>
 
-          {/* Submit Button */}
-          <div>
-            {submitError && (
-              <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <span className="block sm:inline">{submitError}</span>
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700">Age Range Preferences</label>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="number"
+                        name="min_age"
+                        value={formData.min_age}
+                        onChange={handleChange}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <span>to</span>
+                      <input
+                        type="number"
+                        name="max_age"
+                        value={formData.max_age}
+                        onChange={handleChange}
+                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="mt-8 flex justify-between">
+                {step > 1 && (
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold"
+                  >
+                    Back
+                  </button>
+                )}
+                {step < 4 ? (
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="ml-auto px-8 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 font-bold shadow-lg shadow-rose-200 transition-all"
+                  >
+                    Next Step
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="ml-auto px-8 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 font-bold shadow-lg shadow-rose-200 transition-all disabled:opacity-50"
+                  >
+                    {loading ? 'Saving...' : 'Finish Registration'}
+                  </button>
+                )}
               </div>
-            )}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading ? 'bg-rose-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2`}
-            >
-              {loading ? 'Saving...' : 'Complete Profile'}
-            </button>
+              {submitStatus && <p className="mt-4 text-center text-rose-500 font-medium">{submitStatus}</p>}
+            </form>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
 
 export default CompleteProfilePage;
-

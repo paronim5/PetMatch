@@ -74,7 +74,7 @@ def google_callback(code: str, db: Session = Depends(deps.get_db)):
     access_token = create_access_token(data={"sub": user.email})
     
     # Check if profile is complete
-    profile_incomplete = not user.profile or not user.profile.date_of_birth
+    profile_incomplete = not user.profile or not user.profile.date_of_birth or not user.phone_number_hash
     
     return {
         "access_token": access_token,
