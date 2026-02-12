@@ -353,6 +353,15 @@ const SignUpPage = () => {
     }
     const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
     
+    // Check for invalid photos
+    const hasInvalidPhotos = profilePhotoFiles.some(f => photoValidations[f.name]?.status === 'error');
+    if (hasInvalidPhotos) {
+      const msg = 'One or more photos are invalid. Please remove them before continuing.';
+      setPhotoError(msg);
+      setErrorMessage(msg);
+      return;
+    }
+
     // Validate photo
     const validPhotos = profilePhotoFiles.filter(f => photoValidations[f.name]?.status === 'success');
     
@@ -886,7 +895,7 @@ const SignUpPage = () => {
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
-                                    className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute top-1 right-1 bg-red-500 rounded-full p-1.5 shadow-lg hover:bg-red-600 text-white transition-all transform hover:scale-110 z-10"
                                     title="Remove photo"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

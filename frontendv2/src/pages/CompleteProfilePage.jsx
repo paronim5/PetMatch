@@ -144,7 +144,26 @@ const CompleteProfilePage = () => {
   };
 
   const handlePhotoDelete = async () => {
+    // If we have a newly selected file, just remove it locally first
+    if (profilePhotoFile) {
+      setProfilePhotoFile(null);
+      setPhotoValidation({ status: 'idle', message: '' });
+      
+      // If we had existing photos, restore the preview of the primary one
+      if (existingPhotos.length > 0) {
+        const primary = existingPhotos.find(p => p.is_primary) || existingPhotos[0];
+        setPhotoPreview(primary.photo_url.startsWith('http') ? primary.photo_url : `${import.meta.env.VITE_API_URL}/static/uploads/${primary.photo_url}`);
+        setPhotoValidation({ status: 'success', message: 'Current profile photo' });
+      } else {
+        setPhotoPreview(null);
+      }
+      return;
+    }
+
+    // If no new file but we have existing photos, delete them from server
     if (existingPhotos.length > 0) {
+      if (!window.confirm('Are you sure you want to remove your current profile photo?')) return;
+      
       try {
         setLoading(true);
         for (const photo of existingPhotos) {
@@ -152,7 +171,6 @@ const CompleteProfilePage = () => {
         }
         setExistingPhotos([]);
         setPhotoPreview(null);
-        setProfilePhotoFile(null);
         setPhotoValidation({ status: 'idle', message: '' });
       } catch (err) {
         console.error('Failed to delete photos:', err);
@@ -160,10 +178,6 @@ const CompleteProfilePage = () => {
       } finally {
         setLoading(false);
       }
-    } else {
-      setPhotoPreview(null);
-      setProfilePhotoFile(null);
-      setPhotoValidation({ status: 'idle', message: '' });
     }
   };
 
@@ -175,8 +189,12 @@ const CompleteProfilePage = () => {
       if (!formData.gender) errors.gender = 'Required';
       if (!formData.phone_number) errors.phone_number = 'Required';
     }
-    if (currentStep === 2 && photoValidation.status === 'error') {
-      errors.photo = 'Please upload a valid photo';
+    if (currentStep === 2) {
+      if (photoValidation.status === 'error') {
+        errors.photo = photoValidation.message || 'Please upload a valid photo';
+      } else if (!photoPreview && existingPhotos.length === 0) {
+        errors.photo = 'A profile photo is required';
+      }
     }
     if (currentStep === 3) {
       if (formData.height_value) {
@@ -190,6 +208,12 @@ const CompleteProfilePage = () => {
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(step)) {
+      setStep(step + 1);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -312,6 +336,11 @@ const CompleteProfilePage = () => {
 
               {step === 2 && (
                 <div className="space-y-6 animate-fadeIn flex flex-col items-center">
+                  {fieldErrors.photo && (
+                    <div className="w-full p-3 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-xs font-bold text-center animate-bounce">
+                      {fieldErrors.photo}
+                    </div>
+                  )}
                   <div className="relative w-40 h-40 group">
                     <div className={`w-full h-full rounded-3xl overflow-hidden border-2 border-dashed transition-all flex items-center justify-center bg-gray-50 ${
                       photoValidation.status === 'error' ? 'border-red-300' : 
@@ -435,6 +464,7 @@ const CompleteProfilePage = () => {
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Location</label>
                     <div className="shadow-sm rounded-2xl overflow-hidden border-0">
                       <GooglePlacesAutocomplete 
+                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
                         selectProps={{ 
                           value: address, 
                           onChange: handleAddressSelect, 
@@ -518,7 +548,7 @@ const CompleteProfilePage = () => {
                     <FaChevronLeft /> Back
                   </button>
                 )}
-                <button type="button" onClick={step === 4 ? handleSubmit : () => setStep(step + 1)} disabled={loading || (step === 2 && photoValidation.status === 'loading')} className="flex-1 py-3 px-4 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-2 disabled:opacity-50">
+                <button type="button" onClick={step === 4 ? handleSubmit : handleNext} disabled={loading || (step === 2 && photoValidation.status === 'loading')} className="flex-1 py-3 px-4 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-2 disabled:opacity-50">
                   {loading ? 'Saving...' : step === 4 ? 'Finish Profile' : <>{step === 2 && photoValidation.status === 'loading' ? 'Validating...' : 'Next'} <FaChevronRight /></>}
                 </button>
               </div>

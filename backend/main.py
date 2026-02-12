@@ -54,7 +54,22 @@ else:
         allow_headers=["*"],
     )
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    try:
+        response = await call_next(request)
+        logger.info(f"Request finished: {request.method} {request.url.path} - Status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Request failed: {request.method} {request.url.path} - Error: {e}")
+        raise
 
 @app.on_event("startup")
 async def startup_event():
@@ -72,6 +87,7 @@ async def startup_event():
         logger.error(f"FATAL: Could not connect to database: {e}")
         # We continue to let the app start, but it will likely fail later
     
+    logger.info("Backend is ready to receive requests.")
     try:
         today = date.today()
         first_day = today.replace(day=1)
