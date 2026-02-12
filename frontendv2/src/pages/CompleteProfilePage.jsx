@@ -4,7 +4,7 @@ import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { api } from '../services/api';
 import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
-import { FaShieldAlt, FaCheckCircle, FaTimesCircle, FaMapMarkerAlt, FaUser, FaCamera, FaHeart, FaCog, FaChevronLeft, FaChevronRight, FaSpinner } from 'react-icons/fa';
+import { FaShieldAlt, FaCheckCircle, FaTimesCircle, FaMapMarkerAlt, FaUser, FaCamera, FaHeart, FaCog, FaChevronLeft, FaChevronRight, FaSpinner, FaLock } from 'react-icons/fa';
 
 const CompleteProfilePage = () => {
   const [step, setStep] = useState(1);
@@ -32,11 +32,14 @@ const CompleteProfilePage = () => {
     min_age: 18,
     max_age: 100,
     max_distance: 50,
-    preferred_genders: ['female', 'male']
+    preferred_genders: ['female', 'male'],
+    password: '',
+    confirmPassword: ''
   });
   
   const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [existingPhotos, setExistingPhotos] = useState([]);
   const [photoValidation, setPhotoValidation] = useState({ status: 'idle', message: '' });
   const [address, setAddress] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -63,6 +66,12 @@ const CompleteProfilePage = () => {
                 smoking: user.profile.smoking || 'never',
                 drinking: user.profile.drinking || 'never'
             }));
+        }
+        if (user.photos && user.photos.length > 0) {
+            setExistingPhotos(user.photos);
+            const primary = user.photos.find(p => p.is_primary) || user.photos[0];
+            setPhotoPreview(primary.photo_url.startsWith('http') ? primary.photo_url : `${import.meta.env.VITE_API_URL}/static/uploads/${primary.photo_url}`);
+            setPhotoValidation({ status: 'success', message: 'Current profile photo' });
         }
       } catch (err) {
         console.error('Failed to fetch user data:', err);
@@ -134,6 +143,30 @@ const CompleteProfilePage = () => {
     }
   };
 
+  const handlePhotoDelete = async () => {
+    if (existingPhotos.length > 0) {
+      try {
+        setLoading(true);
+        for (const photo of existingPhotos) {
+          await userService.deletePhoto(photo.id);
+        }
+        setExistingPhotos([]);
+        setPhotoPreview(null);
+        setProfilePhotoFile(null);
+        setPhotoValidation({ status: 'idle', message: '' });
+      } catch (err) {
+        console.error('Failed to delete photos:', err);
+        alert('Failed to remove current photo');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setPhotoPreview(null);
+      setProfilePhotoFile(null);
+      setPhotoValidation({ status: 'idle', message: '' });
+    }
+  };
+
   const validateStep = (currentStep) => {
     const errors = {};
     if (currentStep === 1) {
@@ -170,8 +203,25 @@ const CompleteProfilePage = () => {
       }
       const sanitizedLocal = formData.phone_number.replace(/[^0-9]/g, '');
       const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
-      await userService.updateProfile({ ...formData, phone_number: phoneE164 });
-      await userService.updatePreferences({ min_age: formData.min_age, max_age: formData.max_age, max_distance: formData.max_distance, preferred_genders: formData.preferred_genders });
+      
+      const updateData = { ...formData, phone_number: phoneE164 };
+      
+      // Add password if provided and matches
+      if (formData.password) {
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+        updateData.password = formData.password;
+      }
+
+      await userService.updateProfile(updateData);
+      await userService.updatePreferences({ 
+        min_age: formData.min_age, 
+        max_age: formData.max_age, 
+        max_distance: formData.max_distance, 
+        preferred_genders: formData.preferred_genders 
+      });
+
       setSubmitStatus('Profile complete!');
       setTimeout(() => navigate('/matching'), 1500);
     } catch (error) {
@@ -212,22 +262,22 @@ const CompleteProfilePage = () => {
                 <div className="space-y-4 animate-fadeIn">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input type="text" name="first_name" value={formData.first_name} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:ring-rose-500 ${fieldErrors.first_name ? 'border-red-500' : 'border-gray-300'}`} />
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">First Name</label>
+                      <input type="text" name="first_name" value={formData.first_name} onChange={handleChange} className={`block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all ${fieldErrors.first_name ? 'ring-2 ring-red-500' : ''}`} placeholder="Your first name" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input type="text" name="surname" value={formData.surname} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-rose-500" />
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Surname</label>
+                      <input type="text" name="surname" value={formData.surname} onChange={handleChange} className="block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all" placeholder="Optional" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                      <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:ring-rose-500 ${fieldErrors.date_of_birth ? 'border-red-500' : 'border-gray-300'}`} />
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Date of Birth</label>
+                      <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={`block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all ${fieldErrors.date_of_birth ? 'ring-2 ring-red-500' : ''}`} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                      <select name="gender" value={formData.gender} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:ring-rose-500 ${fieldErrors.gender ? 'border-red-500' : 'border-gray-300'}`}>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Gender</label>
+                      <select name="gender" value={formData.gender} onChange={handleChange} className={`block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all ${fieldErrors.gender ? 'ring-2 ring-red-500' : ''}`}>
                         <option value="">Select...</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -235,52 +285,88 @@ const CompleteProfilePage = () => {
                       </select>
                     </div>
                   </div>
+
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <h4 className="text-xs font-bold text-gray-500 mb-4 flex items-center gap-2">
+                      <FaLock className="text-rose-400" /> Account Security (Optional)
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">New Password</label>
+                        <input type="password" name="password" value={formData.password} onChange={handleChange} className="block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all" placeholder="Set a password" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Confirm Password</label>
+                        <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all" placeholder="Repeat password" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[10px] text-gray-400">Set a password if you want to log in with your email later.</p>
+                  </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Phone Number</label>
                     <div className="flex gap-2">
-                      <select name="phone_country_code" value={formData.phone_country_code} onChange={handleChange} className="w-24 px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="+420">+420</option>
-                        <option value="+421">+421</option>
+                      <select name="phone_country_code" value={formData.phone_country_code} onChange={handleChange} className="w-28 px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all">
+                        <option value="+420">🇨🇿 +420</option>
+                        <option value="+421">🇸🇰 +421</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+49">🇩🇪 +49</option>
                       </select>
-                      <input type="tel" name="phone_number" value={formData.phone_number} onChange={handleChange} className={`flex-1 px-4 py-2 border rounded-lg focus:ring-rose-500 ${fieldErrors.phone_number ? 'border-red-500' : 'border-gray-300'}`} />
+                      <input type="tel" name="phone_number" value={formData.phone_number} onChange={handleChange} className={`flex-1 px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all ${fieldErrors.phone_number ? 'ring-2 ring-red-500' : ''}`} placeholder="777 123 456" />
                     </div>
                   </div>
                 </div>
               )}
 
               {step === 2 && (
-                <div className="space-y-6 animate-fadeIn text-center">
-                  <div className="relative w-48 h-48 mx-auto rounded-2xl overflow-hidden border-4 border-dashed border-gray-200 group">
-                    {photoPreview ? (
-                      <img src={photoPreview} className="w-full h-full object-cover" alt="Preview" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                        <FaCamera size={48} className="mb-2" />
-                        <span className="text-xs">Upload Photo</span>
-                      </div>
-                    )}
-                    <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoSelect} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    
-                    {photoValidation.status !== 'idle' && (
-                      <div className={`absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white transition-opacity ${photoValidation.status === 'loading' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        {photoValidation.status === 'loading' && <FaSpinner className="animate-spin text-3xl mb-2" />}
-                        {photoValidation.status === 'success' && <FaCheckCircle className="text-green-400 text-3xl mb-2" />}
-                        {photoValidation.status === 'error' && <FaTimesCircle className="text-red-400 text-3xl mb-2" />}
-                        <span className="text-[10px] px-2 text-center">{photoValidation.message}</span>
-                      </div>
+                <div className="space-y-6 animate-fadeIn flex flex-col items-center">
+                  <div className="relative w-40 h-40 group">
+                    <div className={`w-full h-full rounded-3xl overflow-hidden border-2 border-dashed transition-all flex items-center justify-center bg-gray-50 ${
+                      photoValidation.status === 'error' ? 'border-red-300' : 
+                      photoValidation.status === 'success' ? 'border-green-300' : 'border-rose-200'
+                    }`}>
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <FaCamera className="text-4xl text-rose-200" />
+                      )}
+                      
+                      {photoValidation.status === 'loading' && (
+                        <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-rose-500 text-white rounded-xl shadow-lg flex items-center justify-center cursor-pointer hover:bg-rose-600 transition-all hover:scale-110">
+                      <FaCamera size={18} />
+                      <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={handlePhotoSelect} />
+                    </label>
+
+                    {photoPreview && (
+                      <button 
+                        type="button"
+                        onClick={handlePhotoDelete}
+                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-lg shadow-lg flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110"
+                      >
+                        <FaTimesCircle size={14} />
+                      </button>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    <div className="p-3 bg-green-50 rounded-xl border border-green-100">
-                      <h4 className="text-xs font-bold text-green-700 flex items-center gap-1 mb-1"><FaCheckCircle /> Good</h4>
-                      <p className="text-[10px] text-green-600">Clear pet photo, JPEG/PNG, min 200x200px.</p>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                      <h4 className="text-xs font-bold text-red-700 flex items-center gap-1 mb-1"><FaTimesCircle /> Avoid</h4>
-                      <p className="text-[10px] text-red-600">People, blurry shots, or large files (&gt;10MB).</p>
-                    </div>
-                  </div>
+                  {photoValidation.message && (
+                    <p className={`mt-3 text-xs font-medium px-3 py-1 rounded-full ${
+                      photoValidation.status === 'error' ? 'bg-red-50 text-red-600' : 
+                      photoValidation.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {photoValidation.message}
+                    </p>
+                  )}
+                  
+                  <p className="mt-4 text-xs text-gray-400 text-center max-w-[200px]">
+                    Upload a clear photo. Our AI will verify it for quality and safety.
+                  </p>
                 </div>
               )}
 

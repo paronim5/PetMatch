@@ -87,15 +87,18 @@ const SignUpPage = () => {
         }
         break;
       case 'height_value':
-        if (value) {
-          const val = parseFloat(value);
-          if (currentData.height_unit === 'cm') {
+      case 'height_unit': {
+        const val = name === 'height_value' ? parseFloat(value) : parseFloat(currentData.height_value);
+        const unit = name === 'height_unit' ? value : currentData.height_unit;
+        if (!isNaN(val)) {
+          if (unit === 'cm') {
             if (val < 100 || val > 250) error = 'Height must be between 100 and 250 cm.';
           } else {
             if (val < 36 || val > 96) error = 'Height must be between 36 and 96 inches.';
           }
         }
         break;
+      }
       case 'date_of_birth':
         if (value) {
           const today = new Date();

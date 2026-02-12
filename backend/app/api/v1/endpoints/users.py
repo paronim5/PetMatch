@@ -16,6 +16,7 @@ from sqlalchemy import func
 
 from app.api import deps
 from app.core.config import settings
+from app.core.security import get_password_hash
 from app.core.limiter import limiter
 from app.domain.schemas import (
     User, UserCreate, UserUpdate, UserProfile, UserProfileUpdate, 
@@ -117,10 +118,16 @@ def update_user_profile(
     latitude = profile_data.pop("latitude", None)
     longitude = profile_data.pop("longitude", None)
     phone_number = profile_data.pop("phone_number", None)
+    password = profile_data.pop("password", None)
     
     if phone_number:
         # Update phone number hash on user model
         current_user.phone_number_hash = hashlib.sha256(phone_number.encode("utf-8")).hexdigest()
+        db.add(current_user)
+
+    if password:
+        # Update password hash on user model
+        current_user.password_hash = get_password_hash(password)
         db.add(current_user)
 
     if not current_user.profile:
