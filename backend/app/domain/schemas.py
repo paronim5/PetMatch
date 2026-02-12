@@ -99,8 +99,6 @@ class UserProfileCreate(UserProfileBase):
 class UserProfileUpdate(UserProfileBase):
     first_name: Optional[str] = None
     date_of_birth: Optional[date] = None
-    phone_number: Optional[str] = None
-    password: Optional[str] = None
 
 class UserProfile(UserProfileBase):
     id: int

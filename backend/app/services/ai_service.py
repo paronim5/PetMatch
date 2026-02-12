@@ -21,8 +21,13 @@ class AIService:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(AIService, cls).__new__(cls)
-            cls._instance._load_model()
+            # Lazy loading: we don't load the model here, but in the first call to _predict_internal
         return cls._instance
+
+    def _get_model(self):
+        if self._model is None:
+            self._load_model()
+        return self._model
 
     def _load_model(self):
         try:
@@ -35,6 +40,7 @@ class AIService:
                 logger.info("Custom model loaded successfully.")
             else:
                 logger.info("Loading MobileNetV2 model...")
+                # Reduce memory usage by loading only when needed
                 self._model = MobileNetV2(weights='imagenet')
                 self._is_custom_model = False
                 logger.info("MobileNetV2 model loaded successfully.")
@@ -61,13 +67,14 @@ class AIService:
 
     @lru_cache(maxsize=32)
     def _predict_internal(self, image_bytes: bytes) -> dict:
-        if self._model is None:
+        model = self._get_model()
+        if model is None:
             logger.warning("Model not loaded, skipping validation")
             return {"is_animal": True, "animal_type": "unknown", "confidence": 0.0, "is_safe": True}
 
         try:
             processed_image = self._prepare_image(image_bytes)
-            predictions = self._model.predict(processed_image)
+            predictions = model.predict(processed_image)
             
             if self._is_custom_model:
                 # Assuming custom model output: [cat, dog, hamster, bird, fish, rabbit, other]

@@ -203,24 +203,15 @@ const CompleteProfilePage = () => {
       }
       const sanitizedLocal = formData.phone_number.replace(/[^0-9]/g, '');
       const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
-      
-      const updateData = { ...formData, phone_number: phoneE164 };
-      
-      // Add password if provided and matches
+      await userService.updateProfile({ ...formData, phone_number: phoneE164 });
+      await userService.updatePreferences({ min_age: formData.min_age, max_age: formData.max_age, max_distance: formData.max_distance, preferred_genders: formData.preferred_genders });
+      // Handle password update if provided
       if (formData.password) {
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match');
         }
-        updateData.password = formData.password;
+        await userService.updateProfile({ password: formData.password });
       }
-
-      await userService.updateProfile(updateData);
-      await userService.updatePreferences({ 
-        min_age: formData.min_age, 
-        max_age: formData.max_age, 
-        max_distance: formData.max_distance, 
-        preferred_genders: formData.preferred_genders 
-      });
 
       setSubmitStatus('Profile complete!');
       setTimeout(() => navigate('/matching'), 1500);

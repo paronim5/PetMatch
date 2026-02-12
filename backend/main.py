@@ -26,9 +26,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Mount static files
 import os
-if not os.path.exists("static/uploads"):
-    os.makedirs("static/uploads")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+try:
+    if not os.path.exists("static/uploads"):
+        os.makedirs("static/uploads", exist_ok=True)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception as e:
+    logger.error(f"Failed to mount static files: {e}")
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:
@@ -57,6 +60,18 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 async def startup_event():
     logger.info("Starting up PetMatch Backend...")
     logger.info(f"Allowed CORS Origins: {settings.BACKEND_CORS_ORIGINS}")
+    
+    # Check database connectivity
+    try:
+        db = Database()
+        # Try to connect and run a simple query
+        with db.engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        logger.info("Database connection successful.")
+    except Exception as e:
+        logger.error(f"FATAL: Could not connect to database: {e}")
+        # We continue to let the app start, but it will likely fail later
+    
     try:
         today = date.today()
         first_day = today.replace(day=1)
