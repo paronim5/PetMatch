@@ -1,22 +1,19 @@
-# Build stage
-FROM python:3.11-slim as builder
+# ── Stage 1: build Python wheels for the runtime requirements ────────────────
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
 COPY requirements.txt .
 
-# FIX: Added oauthlib and requests-oauthlib directly here
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels \
     -r requirements.txt \
     oauthlib \
@@ -24,45 +21,54 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels \
     gunicorn \
     uvicorn
 
-# Final stage
+# ── Stage 2: convert MobileNetV2 → ONNX (heavy; not in final image) ──────────
+FROM python:3.11-slim AS model-converter
+
+WORKDIR /tmp
+
+# Install TF + tf2onnx only for model conversion
+RUN pip install --no-cache-dir \
+    "tensorflow-cpu>=2.15.0,<2.16.0" \
+    "tf2onnx>=1.16.0"
+
+COPY convert_model.py .
+RUN python convert_model.py
+
+# ── Stage 3: lean runtime image ───────────────────────────────────────────────
 FROM python:3.11-slim
 
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+# Limit CPU threads used by numpy / onnxruntime on a single-core instance
+ENV OMP_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
 
-# Install runtime dependencies
+# Runtime system libs (no libhdf5 needed without TensorFlow)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
-    libhdf5-dev \
     libgl1 \
     libglib2.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy wheels and install
+# Install application wheels
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
-
 RUN pip install --no-cache /wheels/*
 
-# Set Keras Home for model caching
-ENV KERAS_HOME=/app/.keras
+# Copy pre-built ONNX model and class labels
+COPY --from=model-converter /tmp/mobilenetv2.onnx /app/mobilenetv2.onnx
+COPY --from=model-converter /tmp/imagenet_class_index.json /app/imagenet_class_index.json
 
-# Pre-download MobileNetV2 model to avoid download on first request
-# We do this as root, then chown to app
-RUN mkdir -p /app/.keras && \
-    python -c "import os; os.environ['KERAS_HOME']='/app/.keras'; from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2; MobileNetV2(weights='imagenet', include_top=True)" && \
-    chmod -R 777 /app/.keras
-
-# Create a non-root user first
+# Create non-root user
 RUN addgroup --system app && adduser --system --group app
 
 # Copy application code
 COPY . .
 
-# Create static directory and set permissions
 RUN mkdir -p static/uploads && \
     chown -R app:app /app && \
     chmod -R 755 static
@@ -71,4 +77,10 @@ USER app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "main:app", \
+     "--workers", "1", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]

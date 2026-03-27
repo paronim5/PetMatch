@@ -1,0 +1,26 @@
+version: '3.8'
+
+# Local development override — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+#
+# Access the app at http://localhost
+
+services:
+  backend:
+    environment:
+      - BACKEND_CORS_ORIGINS=["http://localhost","http://localhost:80","http://127.0.0.1"]
+      - SECRET_KEY=local-dev-secret-key-change-in-production
+
+  nginx:
+    volumes:
+      - ./nginx/conf.local:/etc/nginx/conf.d:ro
+    ports:
+      - "80:80"
+
+  # Disable certbot and stripe for local dev
+  certbot:
+    profiles:
+      - production
+  stripe:
+    profiles:
+      - production

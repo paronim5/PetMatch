@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userService } from '../services/user';
+import { useNotification } from '../context/useNotification';
 import { FaArrowLeft, FaBan, FaUnlock, FaFlag, FaUser } from 'react-icons/fa';
 
 const BlockHistoryPage = () => {
   const navigate = useNavigate();
+  const { addToast } = useNotification();
   const [activeTab, setActiveTab] = useState('blocks'); // 'blocks' or 'reports'
   const [blocks, setBlocks] = useState([]);
   const [reports, setReports] = useState([]);
@@ -35,14 +37,13 @@ const BlockHistoryPage = () => {
   };
 
   const handleUnblock = async (blockedId) => {
-    if (!window.confirm('Are you sure you want to unblock this user?')) return;
-    
     try {
       await userService.unblockUser(blockedId);
       setBlocks(prev => prev.filter(b => b.blocked_id !== blockedId));
+      addToast('User unblocked successfully.', 'success');
     } catch (err) {
       console.error('Failed to unblock:', err);
-      alert('Failed to unblock user.');
+      addToast('Failed to unblock user. Please try again.', 'error');
     }
   };
 

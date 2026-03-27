@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface ToastProps {
   id: number;
@@ -8,58 +8,97 @@ interface ToastProps {
   onClick?: () => void;
 }
 
+const CONFIG = {
+  success: {
+    bar: 'bg-emerald-500',
+    icon: 'bg-emerald-100 text-emerald-600',
+    svg: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    ),
+  },
+  error: {
+    bar: 'bg-red-500',
+    icon: 'bg-red-100 text-red-600',
+    svg: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    ),
+  },
+  warning: {
+    bar: 'bg-amber-500',
+    icon: 'bg-amber-100 text-amber-600',
+    svg: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      </svg>
+    ),
+  },
+  info: {
+    bar: 'bg-rose-500',
+    icon: 'bg-rose-100 text-rose-600',
+    svg: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+};
+
 const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, onClick }) => {
+  const [visible, setVisible] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose(id);
-    }, 5000);
-    return () => clearTimeout(timer);
+    // Trigger slide-in
+    const showTimer = setTimeout(() => setVisible(true), 10);
+    // Auto-dismiss
+    const hideTimer = setTimeout(() => {
+      setVisible(false);
+      setTimeout(() => onClose(id), 300);
+    }, 4700);
+    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
   }, [id, onClose]);
 
-  const bgColors = {
-    info: 'bg-blue-500',
-    success: 'bg-green-500',
-    warning: 'bg-yellow-500',
-    error: 'bg-red-500',
-  };
+  const cfg = CONFIG[type];
 
   return (
-    <div 
-      className={`flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800 border-l-4 ${bgColors[type].replace('bg-', 'border-')} ${onClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}`} 
-      role="alert"
-      onClick={() => {
-        if (onClick) {
-          onClick();
-          onClose(id); // Close on click
-        }
-      }}
+    <div
+      className={`pointer-events-auto w-full transition-all duration-300 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}
     >
-      <div className={`inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${bgColors[type]} rounded-lg`}>
-         {/* Icon based on type */}
-         {type === 'success' && (
-             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-             </svg>
-         )}
-         {type === 'info' && (
-             <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
-             </svg>
-         )}
-         {/* Add others as needed */}
-      </div>
-      <div className="ml-3 text-sm font-normal text-gray-800">{message}</div>
-      <button 
-        type="button" 
-        className="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" 
-        aria-label="Close"
-        onClick={() => onClose(id)}
+      <div
+        role="alert"
+        onClick={() => { if (onClick) { onClick(); setVisible(false); setTimeout(() => onClose(id), 300); } }}
+        className={`flex items-start gap-3 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 overflow-hidden relative ${
+          onClick ? 'cursor-pointer hover:shadow-2xl' : ''
+        }`}
       >
-        <span className="sr-only">Close</span>
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
-        </svg>
-      </button>
+        {/* Accent bar */}
+        <div className={`absolute left-0 top-0 bottom-0 w-1 ${cfg.bar} rounded-l-2xl`} />
+
+        {/* Icon */}
+        <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ml-2 ${cfg.icon}`}>
+          {cfg.svg}
+        </div>
+
+        {/* Message */}
+        <p className="flex-1 text-sm font-medium text-gray-800 pt-1 pr-2">{message}</p>
+
+        {/* Close */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setVisible(false); setTimeout(() => onClose(id), 300); }}
+          className="flex-shrink-0 text-gray-300 hover:text-gray-500 transition-colors mt-0.5"
+          aria-label="Close"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };

@@ -94,10 +94,6 @@ def delete_user_me(
     """
     Soft delete the current user.
     """
-    # Check if user is restricted from deleting account
-    if current_user.id == 31:
-        raise HTTPException(status_code=403, detail=" ярик, я так и знал что после этого ты захочешь замести следы своей измены...                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ")
-    
     logger.info(f"Deactivating user: {current_user.email} (ID: {current_user.id})")
     current_user.status = "deactivated"
     current_user.deleted_at = datetime.utcnow()
@@ -151,9 +147,7 @@ def update_user_profile(
         raise HTTPException(status_code=400, detail="Invalid profile data provided. Please check your inputs.")
     except Exception as e:
         db.rollback()
-        logger.error(f"Unexpected error updating profile: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Unexpected error updating profile: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to update profile due to a server error.")
 
     logger.info(f"Profile updated successfully for user {current_user.id}")

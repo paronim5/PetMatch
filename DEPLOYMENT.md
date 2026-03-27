@@ -1,6 +1,6 @@
 # Deployment Guide for paroniim.xyz
 
-This guide documents the steps to configure and deploy the application on an AWS EC2 instance with the domain `paroniim.xyz` and IP `98.93.52.42`.
+This guide documents the steps to configure and deploy the application on an AWS EC2 instance with the domain `paroniim.xyz` and IP `23.21.34.9`.
 
 ## 1. DNS Configuration
 
@@ -12,8 +12,8 @@ You need to point your domain to the AWS server's IP address.
 
 | Type | Host | Value | TTL |
 | :--- | :--- | :--- | :--- |
-| A | @ | 98.93.52.42 | Automatic / 30 min |
-| A | www | 98.93.52.42 | Automatic / 30 min |
+| A | @ | 23.21.34.9 | Automatic / 30 min |
+| A | www | 23.21.34.9 | Automatic / 30 min |
 
 *Note: It may take up to 24-48 hours for DNS changes to propagate globally, but it often happens much faster.*
 
@@ -37,6 +37,17 @@ Ensure your EC2 instance allows web traffic.
 
 ### Prerequisites
 Ensure Docker and Docker Compose are installed on your server.
+
+> **t3.micro (1 GB RAM) — add swap space first.**
+> Even with the optimized build, the app needs a little extra headroom during startup.
+> Run these commands once on the EC2 instance before deploying:
+> ```bash
+> sudo fallocate -l 1G /swapfile
+> sudo chmod 600 /swapfile
+> sudo mkswap /swapfile
+> sudo swapon /swapfile
+> echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+> ```
 
 ### Configuration Steps
 
@@ -78,7 +89,7 @@ Ensure Docker and Docker Compose are installed on your server.
     *   It should automatically redirect to `https://paroniim.xyz`.
     *   You should see the secure lock icon in the address bar.
 2.  **IP Access**:
-    *   Visit `http://98.93.52.42`.
+    *   Visit `http://23.21.34.9`.
     *   It should also redirect to HTTPS (note: SSL certificate warnings are expected when accessing via IP because the certificate is valid for the domain name, not the IP).
 3.  **Endpoints**:
     *   Frontend: `https://paroniim.xyz/`

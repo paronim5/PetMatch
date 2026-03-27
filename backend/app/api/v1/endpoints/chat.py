@@ -109,32 +109,3 @@ def join_chat_by_username(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/messages/{message_id}/react", response_model=Message)
-def react_to_message(
-    message_id: int,
-    emoji: str = Body(..., embed=True),
-    db: Session = Depends(deps.get_db),
-    current_user: Any = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Toggle reaction on a message.
-    """
-    try:
-        return messaging_service.react_to_message(db, user_id=current_user.id, message_id=message_id, emoji=emoji)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.post("/matches/{match_id}/read")
-def mark_messages_as_read(
-    match_id: int,
-    db: Session = Depends(deps.get_db),
-    current_user: Any = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Mark all messages in a match as read.
-    """
-    try:
-        messaging_service.mark_messages_as_read(db, user_id=current_user.id, match_id=match_id)
-        return {"status": "ok"}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))

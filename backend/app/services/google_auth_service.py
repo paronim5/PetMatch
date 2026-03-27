@@ -2,7 +2,10 @@ from oauthlib.oauth2 import WebApplicationClient
 import requests
 import json
 import os
+import logging
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Allow insecure transport for local development
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -19,7 +22,7 @@ class GoogleAuthService:
         try:
             return requests.get(self.discovery_url).json()
         except Exception as e:
-            print(f"Error fetching Google provider config: {e}")
+            logger.error(f"Error fetching Google provider config: {e}")
             return None
 
     def get_login_url(self):

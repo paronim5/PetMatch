@@ -1,4 +1,7 @@
 from typing import Callable, List, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 class EventObserver:
     def update(self, event_type: str, data: Any):
@@ -28,7 +31,7 @@ event_bus = Subject()
 # Example Observer for Notifications
 class NotificationService(EventObserver):
     def update(self, event_type: str, data: Any):
-        print(f"NotificationService: Received event {event_type} with data {data}")
+        logger.debug(f"NotificationService: Received event {event_type}")
         # Logic to send notification would go here
 
 notification_service = NotificationService()

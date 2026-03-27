@@ -182,6 +182,8 @@ def create_swipe(
                     
                     try:
                         # Notify Current User
+                        swiped_user = db.query(UserModel).get(swipe_in.swiped_id)
+                        swiped_username = swiped_user.username if swiped_user else "someone"
                         curr_prefs = db.query(UserPreferences).filter(UserPreferences.user_id == current_user.id).first()
                         if not curr_prefs or curr_prefs.notify_matches:
                             notification_service.create_notification(
@@ -189,7 +191,7 @@ def create_swipe(
                                 user_id=current_user.id,
                                 type="match",
                                 title="It's a match!",
-                                message=f"You matched with {db.query(UserModel).get(swipe_in.swiped_id).username}!",
+                                message=f"You matched with {swiped_username}!",
                                 related_user_id=swipe_in.swiped_id,
                                 related_match_id=match.id
                             )
@@ -218,7 +220,5 @@ def create_swipe(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Swipe Error: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to record swipe: {type(e).__name__}: {str(e)}")
+        logger.error(f"Swipe error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to record swipe.")

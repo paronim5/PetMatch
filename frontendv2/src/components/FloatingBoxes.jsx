@@ -1,184 +1,164 @@
-import React, { useMemo } from 'react';
-import TypingText from './TypingText';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// IMPORTANT: Ensure the parent component (LandingPage) passes the isMobile prop:
-// <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} />
+const BOXES = [
+  {
+    icon: '🎯',
+    title: 'Project Goal',
+    desc: 'Why PetMatch exists and what we set out to build.',
+    path: '/project-goal',
+    accent: 'from-rose-500/20 to-rose-500/5',
+    border: 'border-rose-400/30',
+    titleColor: 'text-rose-400',
+  },
+  {
+    icon: '⚡',
+    title: 'Technology',
+    desc: 'The modern stack powering every feature under the hood.',
+    path: '/technology',
+    accent: 'from-orange-500/20 to-orange-500/5',
+    border: 'border-orange-400/30',
+    titleColor: 'text-orange-400',
+  },
+  {
+    icon: '🐾',
+    title: 'Features',
+    desc: "Everything you can do once you're matched.",
+    path: '/features',
+    accent: 'from-pink-500/20 to-pink-500/5',
+    border: 'border-pink-400/30',
+    titleColor: 'text-pink-400',
+  },
+  {
+    icon: '✉️',
+    title: 'Contact',
+    desc: 'Questions, ideas or feedback — reach out.',
+    path: '/contact',
+    accent: 'from-violet-500/20 to-violet-500/5',
+    border: 'border-violet-400/30',
+    titleColor: 'text-violet-400',
+  },
+];
+
+// Desktop: 2x2 grid around center
+const DESKTOP_FINAL = [
+  { left: 24, top: 28 },  // top-left
+  { left: 76, top: 28 },  // top-right
+  { left: 24, top: 72 },  // bottom-left
+  { left: 76, top: 72 },  // bottom-right
+];
+
+// Mobile: vertical stack in center
+const MOBILE_FINAL = [
+  { left: 50, top: 16 },
+  { left: 50, top: 38 },
+  { left: 50, top: 60 },
+  { left: 50, top: 82 },
+];
+
+// Each box comes from its nearest off-screen corner edge
+const DESKTOP_EDGE = [
+  { left: -22, top: -18 },   // top-left (off screen)
+  { left: 122, top: -18 },   // top-right (off screen)
+  { left: -22, top: 118 },   // bottom-left (off screen)
+  { left: 122, top: 118 },   // bottom-right (off screen)
+];
+
+// Mobile: alternate left/right edges
+const MOBILE_EDGE = [
+  { left: -80, top: 16 },
+  { left: 180, top: 38 },
+  { left: -80, top: 60 },
+  { left: 180, top: 82 },
+];
 
 const FloatingBoxes = ({ scrollProgress, isMobile }) => {
- const navigate = useNavigate();
- 
- // Define scroll thresholds for animation phases
- const START_EXPAND = 0.25;
- const END_EXPAND = 0.55;
- const START_FADE = 0.60; // ADJUSTED: Start fading out earlier
- const END_FADE = 0.75;    // NEW: Define the end point of the fade
+  const navigate = useNavigate();
+  // 'idle' → 'edge' → 'final'
+  const [phase, setPhase] = useState('idle');
+  const triggered = useRef(false);
+  const timers = useRef([]);
 
- // Calculate local progress for expansion (0 to 1)
- const expandProgress = useMemo(() => {
-   if (scrollProgress < START_EXPAND) return 0;
-   if (scrollProgress > END_EXPAND) return 1;
-   return (scrollProgress - START_EXPAND) / (END_EXPAND - START_EXPAND);
- }, [scrollProgress]);
+  useEffect(() => {
+    if (scrollProgress > 0.17 && !triggered.current) {
+      triggered.current = true;
+      setPhase('edge');
+      const t = setTimeout(() => setPhase('final'), 80);
+      timers.current.push(t);
+    }
+  }, [scrollProgress]);
 
- // Calculate global opacity/visibility for the entire group
- const globalOpacity = useMemo(() => {
-   if (scrollProgress < 0.20) return 0;
+  // Clean up timers only on unmount
+  useEffect(() => {
+    return () => timers.current.forEach(clearTimeout);
+  }, []);
 
-   // Fade in initially
-   if (scrollProgress >= 0.20 && scrollProgress < START_EXPAND) {
-    return (scrollProgress - 0.20) / (START_EXPAND - 0.20);
-   }
-   
-   // Fade out as scroll progresses past the active area
-   if (scrollProgress > START_FADE) {
-     // MODIFIED: Using new END_FADE constant
-     const fade = 1 - (scrollProgress - START_FADE) / (END_FADE - START_FADE);
-     return Math.max(0, fade);
-   }
-   return 1;
- }, [scrollProgress]);
+  // Fade out as user scrolls past box zone
+  const globalOpacity = useMemo(() => {
+    if (phase === 'idle') return 0;
+    if (scrollProgress > 0.62) {
+      return Math.max(0, 1 - (scrollProgress - 0.62) / 0.13);
+    }
+    return 1;
+  }, [scrollProgress, phase]);
 
- const pointerEvents = globalOpacity > 0.1 ? 'auto' : 'none';
+  const edgePositions = isMobile ? MOBILE_EDGE : DESKTOP_EDGE;
+  const finalPositions = isMobile ? MOBILE_FINAL : DESKTOP_FINAL;
 
- // Typing should only start when expansion starts
- const shouldType = scrollProgress > START_EXPAND;
+  const getPos = (i) => {
+    if (phase === 'idle' || phase === 'edge') return edgePositions[i];
+    return finalPositions[i];
+  };
 
- // Lerp function
- const lerp = (start, end, alpha) => start + (end - start) * alpha;
- 
- // Central starting position for all boxes
- const CENTER_TOP = 60; 
- const CENTER_LEFT = 50;
+  const getTransition = (i) => {
+    if (phase === 'final') {
+      const delay = i * 0.09;
+      return `left 0.9s ${delay}s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.9s ${delay}s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease`;
+    }
+    return 'none';
+  };
 
- // --- RESPONSIVE DESTINATION COORDINATES ---
- // Desktop: Wider spread
- const DESKTOP_LEFT_DEST = 15;
- const DESKTOP_RIGHT_DEST = 85;
- const DESKTOP_TOP_DEST = 20;
- const DESKTOP_BOTTOM_DEST = 80;
+  const isInteractive = phase === 'final' && globalOpacity > 0.1;
 
- // Mobile: Stacked Center Layout
- const MOBILE_CENTER_LEFT = 50;
- const MOBILE_START_TOP = 20; // First box position
- const MOBILE_VERTICAL_SPACING = 25; // Vertical space between stacked boxes (%)
-
- // Box styles base
- const boxStyleBase = {
-   position: 'fixed',
-   transform: 'translate(-50%, -50%)',
-   width: isMobile ? '80%' : '300px', // Wider box for mobile
-   maxWidth: isMobile ? '400px' : 'none',
-   padding: '30px',
-   background: 'rgba(255, 255, 255, 0.15)',
-   backdropFilter: 'blur(12px)',
-   border: '1px solid rgba(255, 255, 255, 0.3)',
-   color: 'black', 
-   borderRadius: '20px',
-   boxShadow: '0 10px 40px 0 rgba(31, 38, 135, 0.45)',
-   textAlign: 'left',
-   zIndex: 50, 
-   transition: 'top 0.4s ease-out, left 0.4s ease-out, opacity 0.5s ease-out, transform 0.2s ease', 
-   cursor: 'pointer',
-   pointerEvents: pointerEvents,
- };
-
- const lorem = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.";
- 
- // Array defining the final state of each box
- const boxConfigs = useMemo(() => [
-   { 
-    // Box 1: Top Left (Desktop) / Top Center (Mobile)
-    leftDest: isMobile ? MOBILE_CENTER_LEFT : DESKTOP_LEFT_DEST, 
-    topDest: isMobile ? MOBILE_START_TOP : DESKTOP_TOP_DEST,
-    mobileStackIndex: 0,
-    path: '/project-goal'
-   },
-   { 
-    // Box 2: Top Right (Desktop) / Second Center (Mobile)
-    leftDest: isMobile ? MOBILE_CENTER_LEFT : DESKTOP_RIGHT_DEST, 
-    topDest: isMobile ? MOBILE_START_TOP + MOBILE_VERTICAL_SPACING * 1 : DESKTOP_TOP_DEST,
-    mobileStackIndex: 1,
-    path: '/technology'
-   },
-   { 
-    // Box 3: Bottom Left (Desktop) / Third Center (Mobile)
-    leftDest: isMobile ? MOBILE_CENTER_LEFT : DESKTOP_LEFT_DEST, 
-    topDest: isMobile ? MOBILE_START_TOP + MOBILE_VERTICAL_SPACING * 2 : DESKTOP_BOTTOM_DEST,
-    mobileStackIndex: 2,
-    path: '/features'
-   },
-   { 
-    // Box 4: Bottom Right (Desktop) / Fourth Center (Mobile)
-    leftDest: isMobile ? MOBILE_CENTER_LEFT : DESKTOP_RIGHT_DEST, 
-    topDest: isMobile ? MOBILE_START_TOP + MOBILE_VERTICAL_SPACING * 3 : DESKTOP_BOTTOM_DEST,
-    mobileStackIndex: 3,
-    path: '/contact'
-   },
- ], [isMobile]);
-
- // --- Animation Calculation ---
- const calculateBoxStyle = (config) => {
-   // 1. Calculate Positional Lerp (Desktop & Mobile)
-   const currentLeft = lerp(CENTER_LEFT, config.leftDest, expandProgress);
-   const currentTop = lerp(CENTER_TOP, config.topDest, expandProgress);
-   
-   let boxOpacity = globalOpacity;
-
-   // 2. Mobile Sequential Fade-In Logic
-   if (isMobile) {
-    const index = config.mobileStackIndex;
-    const delay = 0.1 * index; // 0.1, 0.2, 0.3, 0.4
-    const duration = 0.3;
-    
-    // Calculate local progress for this box's independent fade/move
-    const localProgress = Math.min(
-       Math.max(0, expandProgress - delay) / duration,
-       1
-    );
-    
-    // Box opacity fades in sequentially
-    boxOpacity = localProgress;
-    
-    // Position remains stacked. We just use the 'progress' from global lerp
-    // The quick `transition` CSS property handles the movement.
-   }
-   
-   // Apply global fade-out when scrolling past
-   boxOpacity = Math.min(boxOpacity, globalOpacity);
-
-   return {
-    ...boxStyleBase, 
-    left: `${currentLeft}%`, 
-    top: `${currentTop}%`,
-    opacity: boxOpacity,
-    // If opacity is 0, disable pointer events
-    pointerEvents: boxOpacity > 0.1 ? pointerEvents : 'none',
-   };
- };
-
- return (
-   <>
-    {boxConfigs.map((config, index) => (
-      <div 
-       key={index}
-       style={calculateBoxStyle(config)}
-       onClick={() => navigate(config.path)}
-       className="hover:scale-105 transition-transform duration-200 hover:z-50"
-      >
-       <h3 className="text-2xl font-bold mb-3 text-rose-600">
-         {index === 0 ? "Project Goal" : 
-         index === 1 ? "Technology" :
-         index === 2 ? "Features" : "Contact"}
-       </h3>
-       <p className="text-base font-medium">
-         {shouldType && calculateBoxStyle(config).opacity > 0.5 ? 
-            <TypingText text={lorem} speed={20 + index * 3} /> : ""}
-       </p>
-      </div>
-    ))}
-   </>
- );
+  return (
+    <>
+      {BOXES.map((box, i) => {
+        const pos = getPos(i);
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'fixed',
+              left: `${pos.left}%`,
+              top: `${pos.top}%`,
+              transform: 'translate(-50%, -50%)',
+              opacity: phase === 'idle' ? 0 : globalOpacity,
+              width: isMobile ? '82%' : '240px',
+              maxWidth: isMobile ? '360px' : 'none',
+              transition: getTransition(i),
+              zIndex: 50,
+              pointerEvents: isInteractive ? 'auto' : 'none',
+              willChange: 'left, top',
+            }}
+            onClick={() => isInteractive && navigate(box.path)}
+            className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-3xl p-6 cursor-pointer shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200`}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">{box.icon}</span>
+              <h3 className={`text-lg font-black ${box.titleColor}`}>{box.title}</h3>
+            </div>
+            <p className="text-white/55 text-sm leading-relaxed">{box.desc}</p>
+            <div className={`mt-4 flex items-center gap-1.5 text-xs font-bold ${box.titleColor}`}>
+              Explore
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
 };
 
 export default FloatingBoxes;

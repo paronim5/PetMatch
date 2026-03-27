@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
 import { matchingService } from '../services/matching';
 import { subscriptionService } from '../services/subscription';
+import { useNotification } from '../context/useNotification';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
 import { 
   FaHeart, FaTimes, FaStar, FaUndo, FaBolt, FaUser, 
@@ -11,6 +12,7 @@ import {
 } from 'react-icons/fa';
 
 const MatchingPage = () => {
+  const { addToast } = useNotification();
   const [candidates, setCandidates] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -131,9 +133,9 @@ const MatchingPage = () => {
       await new Promise(resolve => setTimeout(resolve, 3000));
       await subscriptionService.watchAd();
       setShowSubscriptionModal(false);
-      alert("You earned 5 extra swipes!");
+      addToast('You earned 5 extra swipes!', 'success');
     } catch (error) {
-      alert("Failed to watch ad");
+      addToast('Failed to watch ad. Please try again.', 'error');
     } finally {
       setAdLoading(false);
     }
@@ -143,9 +145,9 @@ const MatchingPage = () => {
     try {
       await subscriptionService.upgrade('premium');
       setShowSubscriptionModal(false);
-      alert("Welcome to Premium! You now have unlimited swipes.");
+      addToast('Welcome to Premium! You now have unlimited swipes.', 'success');
     } catch (error) {
-      alert("Upgrade failed");
+      addToast('Upgrade failed. Please try again.', 'error');
     }
   };
 
@@ -174,8 +176,8 @@ const MatchingPage = () => {
     return { transition: 'transform 0.3s ease-out', cursor: 'grab' };
   };
 
-  const handleRewind = () => alert("Rewind is a Premium feature!");
-  const handleBoost = () => alert("Boost is active!");
+  const handleRewind = () => addToast('Rewind is a Premium feature!', 'info');
+  const handleBoost = () => addToast('Boost activated!', 'success');
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../context/useNotification';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { api } from '../services/api';
 import { userService } from '../services/user';
@@ -7,6 +8,7 @@ import { validateImage } from '../utils/imageValidation';
 import { FaShieldAlt, FaCheckCircle, FaTimesCircle, FaMapMarkerAlt, FaUser, FaCamera, FaHeart, FaCog, FaChevronLeft, FaChevronRight, FaSpinner, FaLock } from 'react-icons/fa';
 
 const CompleteProfilePage = () => {
+  const { addToast } = useNotification();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('');
@@ -174,7 +176,7 @@ const CompleteProfilePage = () => {
         setPhotoValidation({ status: 'idle', message: '' });
       } catch (err) {
         console.error('Failed to delete photos:', err);
-        alert('Failed to remove current photo');
+        addToast('Failed to remove photo. Please try again.', 'error');
       } finally {
         setLoading(false);
       }
@@ -238,10 +240,11 @@ const CompleteProfilePage = () => {
       }
 
       setSubmitStatus('Profile complete!');
+      addToast('Profile saved successfully!', 'success');
       setTimeout(() => navigate('/matching'), 1500);
     } catch (error) {
       setSubmitStatus('');
-      alert('Failed to save profile');
+      addToast(error.message || 'Failed to save profile. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { userService } from '../services/user';
 import { subscriptionService } from '../services/subscription';
+import { useNotification } from '../context/useNotification';
 import { validateImage } from '../utils/imageValidation';
 import { 
   FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical, 
@@ -38,6 +39,7 @@ class PhotoSectionErrorBoundary extends React.Component {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { addToast } = useNotification();
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
   const [photos, setPhotos] = useState([]);
@@ -140,10 +142,10 @@ const ProfilePage = () => {
       await new Promise(resolve => setTimeout(resolve, 3000));
       await subscriptionService.watchAd();
       await fetchSubscription();
-      alert("You earned 5 extra swipes!");
+      addToast('You earned 5 extra swipes!', 'success');
     } catch (error) {
       console.error(error);
-      alert("Failed to watch ad");
+      addToast('Failed to watch ad. Please try again.', 'error');
     } finally {
       setAdLoading(false);
     }
@@ -160,7 +162,7 @@ const ProfilePage = () => {
       }
     } catch (error) {
       console.error(error);
-      alert("Upgrade failed");
+      addToast('Upgrade failed. Please try again.', 'error');
     } finally {
       setUpgradeLoading(false);
     }
@@ -457,14 +459,14 @@ const ProfilePage = () => {
       fetchUserAndPhotos();
     } catch (error) {
       console.error('Failed to delete photo:', error);
-      alert('Failed to delete photo');
+      addToast('Failed to delete photo. Please try again.', 'error');
     }
   };
 
   const useCurrentLocation = () => {
     // Check for secure context
     if (!window.isSecureContext) {
-      alert("Location detection requires a secure connection (HTTPS) or localhost. Please enter your location manually.");
+      addToast('Location requires HTTPS. Please enter your city manually.', 'warning');
       return;
     }
 
@@ -474,30 +476,19 @@ const ProfilePage = () => {
           setProfileData({
             ...profileData,
             latitude: position.coords.latitude,
-            longitude: position.coords.longitude
+            longitude: position.coords.longitude,
           });
-          alert(`Location found: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
+          addToast('Location detected successfully!', 'success');
         },
         (error) => {
-          console.error("Error getting location:", error);
-          let msg = "Could not get your location.";
-          if (error.code === 1) {
-             msg += " Permission denied. Please allow location access.";
-          } else if (error.code === 2) {
-             msg += " Position unavailable.";
-          } else if (error.code === 3) {
-             msg += " Timeout.";
-          }
-          alert(msg + " Please enter manually.");
+          console.error('Error getting location:', error);
+          const msgs = { 1: 'Permission denied.', 2: 'Position unavailable.', 3: 'Request timed out.' };
+          addToast(`Could not get location: ${msgs[error.code] || ''} Please enter manually.`, 'error');
         },
-        {
-           enableHighAccuracy: true,
-           timeout: 10000,
-           maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      alert("Geolocation is not supported by this browser.");
+      addToast('Geolocation is not supported by this browser.', 'error');
     }
   };
 
@@ -596,17 +587,14 @@ const ProfilePage = () => {
                   
                   if (!response.ok) {
                      const data = await response.json();
-                     if (response.status === 403) {
-                         alert(data.detail); // Show the backend message if restricted
-                         return;
-                     }
-                     throw new Error(data.detail || 'Failed to delete account');
+                     addToast(data.detail || 'Failed to delete account.', 'error');
+                     return;
                   }
-                  
+
                   localStorage.removeItem('token');
                   navigate('/signup');
                 } catch (e) {
-                  alert(e.message || 'Failed to delete account');
+                  addToast(e.message || 'Failed to delete account.', 'error');
                 }
               }}
               className="bg-white py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center gap-2"

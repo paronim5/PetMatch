@@ -11,6 +11,23 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=petmatch
+    # Tune PostgreSQL for low-memory instance (t3.micro = 1 GB RAM)
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=2MB
+      -c maintenance_work_mem=16MB
+      -c max_connections=20
+      -c effective_cache_size=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=4MB
+      -c synchronous_commit=off
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+        reservations:
+          memory: 64M
     networks:
       - petmatch-network
     healthcheck:
@@ -33,10 +50,19 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=petmatch
       - POSTGRES_PORT=5432
-      - SECRET_KEY=supersecretkey
+      - SECRET_KEY=${SECRET_KEY:-change-this-in-production-use-env-file}
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
     depends_on:
       db:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 128M
     networks:
       - petmatch-network
 
@@ -51,6 +77,10 @@ services:
       - ./backend/.env
     depends_on:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 64M
     networks:
       - petmatch-network
 
@@ -63,6 +93,10 @@ services:
       - "80"
     depends_on:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 48M
     networks:
       - petmatch-network
 
@@ -79,6 +113,10 @@ services:
     depends_on:
       - frontend
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 32M
     networks:
       - petmatch-network
 

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(docker version:*)",
+      "Bash(docker context:*)",
+      "Bash(docker info:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl -s http://localhost/health)",
+      "Bash(curl -s -o /dev/null -w \"Frontend HTTP status: %{http_code}\" http://localhost/)"
+    ]
+  }
+}

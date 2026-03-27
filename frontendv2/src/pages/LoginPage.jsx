@@ -1,120 +1,133 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
+import { FaPaw } from 'react-icons/fa';
 import { authService } from '../services/auth';
 import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       const data = await authService.login(email, password);
-      console.log('Login successful:', data);
       localStorage.setItem('token', data.access_token);
-      // Redirect based on profile status
-      if (data.profile_incomplete) {
-        navigate('/complete-profile');
-      } else {
-        navigate('/matching');
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-      alert('Login failed: ' + error.message);
+      navigate(data.profile_incomplete ? '/complete-profile' : '/matching');
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (codeResponse) => {
+      setError('');
+      setLoading(true);
       try {
         const data = await authService.googleLogin(codeResponse.code);
-        console.log('Google login successful:', data);
         localStorage.setItem('token', data.access_token);
-        if (data.profile_incomplete) {
-            navigate('/complete-profile');
-        } else {
-            navigate('/matching');
-        }
-      } catch (error) {
-        console.error('Google login failed:', error);
-        alert('Google login failed: ' + (error.message || 'Unknown error'));
+        navigate(data.profile_incomplete ? '/complete-profile' : '/matching');
+      } catch (err) {
+        setError('Google login failed: ' + (err.message || 'Unknown error'));
+      } finally {
+        setLoading(false);
       }
     },
-    onError: (error) => {
-        console.error('Google login error:', error);
-        alert('Google login failed');
-    },
+    onError: () => setError('Google login failed'),
     flow: 'auth-code',
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light p-4">
-      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-xl md:text-2xl font-bold text-center text-primary mb-6">Login to PetMatch</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-orange-50 to-rose-100 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              required
-            />
+        {/* Card header */}
+        <div className="bg-gradient-to-r from-rose-500 to-orange-400 px-8 py-10 text-white text-center">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <FaPaw className="text-3xl text-white" />
           </div>
+          <h1 className="text-3xl font-extrabold">Welcome back</h1>
+          <p className="mt-1 text-rose-100 text-sm">Sign in to your PetMatch account</p>
+        </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-3 text-base border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              required
-            />
+        <div className="px-8 py-8 space-y-5">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all text-gray-700 placeholder-gray-400"
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all text-gray-700 placeholder-gray-400"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-rose-200 disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-100" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-3 bg-white text-gray-400 font-medium">or continue with</span>
+            </div>
           </div>
 
           <button
-            type="submit"
-            className="w-full bg-primary text-white h-12 rounded-md hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary text-base font-medium transition-colors"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-600 hover:bg-white hover:shadow-md transition-all disabled:opacity-50"
           >
-            Login
+            <FcGoogle className="text-xl" />
+            Continue with Google
           </button>
-        </form>
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              <FcGoogle className="w-5 h-5 mr-2" />
-              Login with Google
-            </button>
-          </div>
+          <p className="text-center text-sm text-gray-500">
+            Don't have an account?{' '}
+            <Link to="/signup" className="font-bold text-rose-500 hover:text-rose-600">
+              Sign up
+            </Link>
+          </p>
         </div>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-primary hover:text-primary-light">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
