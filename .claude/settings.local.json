@@ -7,7 +7,12 @@
       "Bash(docker info:*)",
       "Bash(docker ps:*)",
       "Bash(curl -s http://localhost/health)",
-      "Bash(curl -s -o /dev/null -w \"Frontend HTTP status: %{http_code}\" http://localhost/)"
+      "Bash(curl -s -o /dev/null -w \"Frontend HTTP status: %{http_code}\" http://localhost/)",
+      "Bash(python -c \":*)",
+      "Bash(python3 -c \":*)",
+      "Read(//usr/**)",
+      "Read(//usr/local/**)",
+      "Bash(py:*)"
     ]
   }
 }
