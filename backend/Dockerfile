@@ -46,11 +46,11 @@ ENV OMP_NUM_THREADS=1
 ENV OPENBLAS_NUM_THREADS=1
 ENV MKL_NUM_THREADS=1
 
-# Runtime system libs (no libhdf5 needed without TensorFlow)
+# Runtime system libs (opencv-python-headless does not need libgl1)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
-    libgl1 \
     libglib2.0-0 \
+    libgomp1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
