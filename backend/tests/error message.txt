@@ -1,0 +1,993 @@
+[2025-12-23 18:11:53 +0000] [10] [WARNING] Invalid HTTP request received.
+[2025-12-23 18:12:05 +0000] [11] [WARNING] Invalid HTTP request received.
+2025-12-23 19:00:16,120 - petmatch - INFO - Registering new user: bahdan.voitenko@gmail.com, Username: bodya
+NotificationService: Received event user_registered with data {'user_id': 45, 'email': 'bahdan.voitenko@gmail.com'}
+2025-12-23 19:00:16,361 - petmatch - INFO - Function register_new_user took 0.2412 seconds to execute
+2025-12-23 19:00:16,362 - petmatch - INFO - User registered successfully: bahdan.voitenko@gmail.com (ID: 45)
+2025-12-23 19:00:16,563 - petmatch - INFO - Login attempt for user: bahdan.voitenko@gmail.com
+2025-12-23 19:00:16,778 - petmatch - INFO - Login successful for user: bahdan.voitenko@gmail.com
+2025-12-23 19:00:25,929 - petmatch - INFO - Registering new user: bogdghghb@gmail.com, Username: Zovchik
+NotificationService: Received event user_registered with data {'user_id': 46, 'email': 'bogdghghb@gmail.com'}
+2025-12-23 19:00:26,150 - petmatch - INFO - Function register_new_user took 0.2203 seconds to execute
+2025-12-23 19:00:26,150 - petmatch - INFO - User registered successfully: bogdghghb@gmail.com (ID: 46)
+2025-12-23 19:00:26,608 - petmatch - INFO - Login attempt for user: bogdghghb@gmail.com
+2025-12-23 19:00:26,844 - petmatch - INFO - Login successful for user: bogdghghb@gmail.com
+2025-12-23 19:00:32,602 - petmatch - INFO - Registering new user: bogdghghb@gmail.com, Username: Zovchik
+2025-12-23 19:00:32,605 - petmatch - ERROR - Registration failed for bogdghghb@gmail.com: User with this email already exists
+2025-12-23 19:00:33,564 - petmatch - INFO - Registering new user: bahdan.voitenko@gmail.com, Username: bodya
+2025-12-23 19:00:33,566 - petmatch - ERROR - Registration failed for bahdan.voitenko@gmail.com: User with this email already exists
+2025-12-23 19:01:12,400 - petmatch - INFO - Login attempt for user: bogdan@gmail.com
+2025-12-23 19:01:12,401 - petmatch - WARNING - Login failed for user: bogdan@gmail.com - Incorrect credentials
+2025-12-23 19:02:02,842 - petmatch - INFO - Updating profile for user: oleksandr.babich@nure.ua (ID: 47)
+2025-12-23 19:02:02,843 - petmatch - INFO - Creating new profile record for user 47
+[2025-12-23 19:02:02 +0000] [8] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (49, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:02.845767, 2025-12-23 19:02:02.845771, null, Dbshbsb).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (49, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:02.845767, 2025-12-23 19:02:02.845771, null, Dbshbsb).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 47, 'first_name': 'Ixjsbeb', 'surname': 'Dbshbsb', 'date_of_birth': datetime.date(2000, 12, 23), 'gender': 'male', 'bio': 'Dhhebr\n\nInterests: Dhushs', 'location_city': 'Prague', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 14.4378005, 'ST_MakePoint_2': 50.0755381, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 1374, 'height_unit': 'cm', 'education': 'Ehuerh', 'occupation': 'Ehhehe', 'relationship_goal': 'friendship', 'smoking': 'regularly', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 2, 2, 845767), 'updated_at': datetime.datetime(2025, 12, 23, 19, 2, 2, 845771), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-23 19:02:03,033 - petmatch - INFO - Updating profile for user: oleksandr.babich@nure.ua (ID: 47)
+2025-12-23 19:02:03,034 - petmatch - INFO - Updating profile for user: oleksandr.babich@nure.ua (ID: 47)
+2025-12-23 19:02:03,034 - petmatch - INFO - Creating new profile record for user 47
+2025-12-23 19:02:03,035 - petmatch - INFO - Creating new profile record for user 47
+[2025-12-23 19:02:03 +0000] [10] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (50, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:03.03569, 2025-12-23 19:02:03.035692, null, Dbshbsb).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (50, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:03.03569, 2025-12-23 19:02:03.035692, null, Dbshbsb).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 47, 'first_name': 'Ixjsbeb', 'surname': 'Dbshbsb', 'date_of_birth': datetime.date(2000, 12, 23), 'gender': 'male', 'bio': 'Dhhebr\n\nInterests: Dhushs', 'location_city': 'Prague', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 14.4378005, 'ST_MakePoint_2': 50.0755381, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 1374, 'height_unit': 'cm', 'education': 'Ehuerh', 'occupation': 'Ehhehe', 'relationship_goal': 'friendship', 'smoking': 'regularly', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 2, 3, 35690), 'updated_at': datetime.datetime(2025, 12, 23, 19, 2, 3, 35692), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+[2025-12-23 19:02:03 +0000] [11] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (51, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:03.036642, 2025-12-23 19:02:03.036644, null, Dbshbsb).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (51, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:03.036642, 2025-12-23 19:02:03.036644, null, Dbshbsb).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 47, 'first_name': 'Ixjsbeb', 'surname': 'Dbshbsb', 'date_of_birth': datetime.date(2000, 12, 23), 'gender': 'male', 'bio': 'Dhhebr\n\nInterests: Dhushs', 'location_city': 'Prague', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 14.4378005, 'ST_MakePoint_2': 50.0755381, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 1374, 'height_unit': 'cm', 'education': 'Ehuerh', 'occupation': 'Ehhehe', 'relationship_goal': 'friendship', 'smoking': 'regularly', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 2, 3, 36642), 'updated_at': datetime.datetime(2025, 12, 23, 19, 2, 3, 36644), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-23 19:02:26,243 - petmatch - INFO - Updating profile for user: oleksandr.babich@nure.ua (ID: 47)
+2025-12-23 19:02:26,244 - petmatch - INFO - Creating new profile record for user 47
+[2025-12-23 19:02:26 +0000] [9] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (52, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:26.245979, 2025-12-23 19:02:26.245981, null, Dbshbsb).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (52, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:26.245979, 2025-12-23 19:02:26.245981, null, Dbshbsb).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 47, 'first_name': 'Ixjsbeb', 'surname': 'Dbshbsb', 'date_of_birth': datetime.date(2000, 12, 23), 'gender': 'male', 'bio': 'Dhhebr\n\nInterests: Dhushs', 'location_city': 'Prague', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 14.4378005, 'ST_MakePoint_2': 50.0755381, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 1374, 'height_unit': 'cm', 'education': 'Ehuerh', 'occupation': 'Ehhehe', 'relationship_goal': 'friendship', 'smoking': 'regularly', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 2, 26, 245979), 'updated_at': datetime.datetime(2025, 12, 23, 19, 2, 26, 245981), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-23 19:02:28,480 - petmatch - INFO - Updating profile for user: oleksandr.babich@nure.ua (ID: 47)
+2025-12-23 19:02:28,481 - petmatch - INFO - Creating new profile record for user 47
+[2025-12-23 19:02:28 +0000] [9] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (53, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:28.482389, 2025-12-23 19:02:28.482391, null, Dbshbsb).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (53, 47, Ixjsbeb, 2000-12-23, male, Dhhebr
+
+Interests: Dhushs, Prague, null, null, 0101000020E61000004B581B6327E02C400E8D823BAB094940, approximate, 1374, cm, Ehuerh, Ehhehe, friendship, regularly, never, null, null, en_US, 2025-12-23 19:02:28.482389, 2025-12-23 19:02:28.482391, null, Dbshbsb).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 47, 'first_name': 'Ixjsbeb', 'surname': 'Dbshbsb', 'date_of_birth': datetime.date(2000, 12, 23), 'gender': 'male', 'bio': 'Dhhebr\n\nInterests: Dhushs', 'location_city': 'Prague', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 14.4378005, 'ST_MakePoint_2': 50.0755381, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 1374, 'height_unit': 'cm', 'education': 'Ehuerh', 'occupation': 'Ehhehe', 'relationship_goal': 'friendship', 'smoking': 'regularly', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 2, 28, 482389), 'updated_at': datetime.datetime(2025, 12, 23, 19, 2, 28, 482391), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-23 19:02:29,456 - petmatch - INFO - Registering new user: bogdan@gmail.com, Username: Voral
+NotificationService: Received event user_registered with data {'user_id': 48, 'email': 'bogdan@gmail.com'}
+2025-12-23 19:02:29,675 - petmatch - INFO - Function register_new_user took 0.2195 seconds to execute
+2025-12-23 19:02:29,676 - petmatch - INFO - User registered successfully: bogdan@gmail.com (ID: 48)
+2025-12-23 19:02:29,862 - petmatch - INFO - Login attempt for user: bogdan@gmail.com
+2025-12-23 19:02:30,078 - petmatch - INFO - Login successful for user: bogdan@gmail.com
+2025-12-23 19:02:35,316 - petmatch - INFO - Registering new user: bogdan@gmail.com, Username: Voral
+2025-12-23 19:02:35,318 - petmatch - ERROR - Registration failed for bogdan@gmail.com: User with this email already exists
+2025-12-23 19:02:46,890 - petmatch - INFO - Login attempt for user: bogdan@gmail.com
+2025-12-23 19:02:47,108 - petmatch - INFO - Login successful for user: bogdan@gmail.com
+2025-12-23 19:03:15,060 - petmatch - INFO - Updating profile for user: bogdan@gmail.com (ID: 48)
+2025-12-23 19:03:15,061 - petmatch - INFO - Creating new profile record for user 48
+[2025-12-23 19:03:15 +0000] [10] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (54, 48, Gjg, 1991-12-12, non_binary, Yhh
+
+Interests: Hhh, , null, null, 0101000020E610000000000000008050400000000000004240, approximate, 566, cm, Ggh, Hhhh, relationship, never, never, null, null, en_US, 2025-12-23 19:03:15.061949, 2025-12-23 19:03:15.061951, null, Fghj).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (54, 48, Gjg, 1991-12-12, non_binary, Yhh
+
+Interests: Hhh, , null, null, 0101000020E610000000000000008050400000000000004240, approximate, 566, cm, Ggh, Hhhh, relationship, never, never, null, null, en_US, 2025-12-23 19:03:15.061949, 2025-12-23 19:03:15.061951, null, Fghj).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 48, 'first_name': 'Gjg', 'surname': 'Fghj', 'date_of_birth': datetime.date(1991, 12, 12), 'gender': 'non_binary', 'bio': 'Yhh\n\nInterests: Hhh', 'location_city': '', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 66.0, 'ST_MakePoint_2': 36.0, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 566, 'height_unit': 'cm', 'education': 'Ggh', 'occupation': 'Hhhh', 'relationship_goal': 'relationship', 'smoking': 'never', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 3, 15, 61949), 'updated_at': datetime.datetime(2025, 12, 23, 19, 3, 15, 61951), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-23 19:03:17,302 - petmatch - INFO - Updating profile for user: bogdan@gmail.com (ID: 48)
+2025-12-23 19:03:17,302 - petmatch - INFO - Creating new profile record for user 48
+[2025-12-23 19:03:17 +0000] [8] [ERROR] Exception in ASGI application
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.CheckViolation: new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (55, 48, Gjg, 1991-12-12, non_binary, Yhh
+
+Interests: Hhh, , null, null, 0101000020E610000000000000008050400000000000004240, approximate, 566, cm, Ggh, Hhhh, relationship, never, never, null, null, en_US, 2025-12-23 19:03:17.303778, 2025-12-23 19:03:17.30378, null, Fghj).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 117, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 103, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 424, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 312, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 61, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2525, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/app/api/v1/endpoints/users.py", line 124, in update_user_profile
+    db.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4331, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4427, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1227, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation "user_profiles" violates check constraint "valid_height_cm"
+DETAIL:  Failing row contains (55, 48, Gjg, 1991-12-12, non_binary, Yhh
+
+Interests: Hhh, , null, null, 0101000020E610000000000000008050400000000000004240, approximate, 566, cm, Ggh, Hhhh, relationship, never, never, null, null, en_US, 2025-12-23 19:03:17.303778, 2025-12-23 19:03:17.30378, null, Fghj).
+
+[SQL: INSERT INTO user_profiles (user_id, first_name, surname, date_of_birth, gender, bio, location_city, location_state, location_country, location, location_privacy, height_value, height_unit, education, occupation, relationship_goal, smoking, drinking, has_children, wants_children, locale, created_at, updated_at, deleted_at) VALUES (%(user_id)s, %(first_name)s, %(surname)s, %(date_of_birth)s, %(gender)s, %(bio)s, %(location_city)s, %(location_state)s, %(location_country)s, ST_SetSRID(ST_MakePoint(%(ST_MakePoint_1)s, %(ST_MakePoint_2)s), %(ST_SetSRID_1)s), %(location_privacy)s, %(height_value)s, %(height_unit)s, %(education)s, %(occupation)s, %(relationship_goal)s, %(smoking)s, %(drinking)s, %(has_children)s, %(wants_children)s, %(locale)s, %(created_at)s, %(updated_at)s, %(deleted_at)s) RETURNING user_profiles.id]
+[parameters: {'user_id': 48, 'first_name': 'Gjg', 'surname': 'Fghj', 'date_of_birth': datetime.date(1991, 12, 12), 'gender': 'non_binary', 'bio': 'Yhh\n\nInterests: Hhh', 'location_city': '', 'location_state': None, 'location_country': None, 'ST_MakePoint_1': 66.0, 'ST_MakePoint_2': 36.0, 'ST_SetSRID_1': 4326, 'location_privacy': 'approximate', 'height_value': 566, 'height_unit': 'cm', 'education': 'Ggh', 'occupation': 'Hhhh', 'relationship_goal': 'relationship', 'smoking': 'never', 'drinking': 'never', 'has_children': None, 'wants_children': None, 'locale': 'en_US', 'created_at': datetime.datetime(2025, 12, 23, 19, 3, 17, 303778), 'updated_at': datetime.datetime(2025, 12, 23, 19, 3, 17, 303780), 'deleted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+[2025-12-23 20:51:20 +0000] [8] [WARNING] Invalid HTTP request received.
+[2025-12-23 20:51:20 +0000] [10] [WARNING] Invalid HTTP request received.
+[2025-12-23 21:01:19 +0000] [10] [WARNING] Invalid HTTP request received.
+[2025-12-23 21:01:20 +0000] [10] [WARNING] Invalid HTTP request received.

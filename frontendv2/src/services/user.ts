@@ -16,8 +16,22 @@ export const userService = {
   uploadPhoto: async (file: File) => {
     const token = localStorage.getItem('token');
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('files', file);
     return api.postForm('/users/me/photos/upload', formData, token || undefined);
+  },
+  uploadPhotos: async (files: File[]) => {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    return api.postForm('/users/me/photos/upload', formData, token || undefined);
+  },
+  validatePhoto: async (file: File) => {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.postForm('/users/validate-photo', formData, token || undefined);
   },
   getPhotos: async () => {
     const token = localStorage.getItem('token');

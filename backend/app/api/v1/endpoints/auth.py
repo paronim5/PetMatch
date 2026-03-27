@@ -14,6 +14,8 @@ from app.domain.enums import UserStatusType
 google_auth_service = GoogleAuthService()
 from app.domain.schemas import Token
 
+from app.core.logging import logger
+
 router = APIRouter()
 
 @router.post("/login", response_model=Token)
@@ -24,12 +26,15 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+    logger.info(f"Login attempt for user: {form_data.username}")
     token = auth_service.login(db, email=form_data.username, password=form_data.password)
     if not token:
+        logger.warning(f"Login failed for user: {form_data.username} - Incorrect credentials")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect email or password",
         )
+    logger.info(f"Login successful for user: {form_data.username}")
     return token
 
 @router.get("/google")

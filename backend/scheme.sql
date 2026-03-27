@@ -1,4 +1,20 @@
 
+-- revoke premium subscription for user
+-- BEGIN;
+--   UPDATE users SET subscription_tier = 'free' WHERE email = '<user email>';
+--   DELETE FROM subscriptions WHERE user_id = (SELECT id FROM users WHERE email = '<user email>');
+-- COMMIT;
+-- 
+
+-- grant premium subscription for user
+-- WITH target_user AS (
+--     UPDATE users 
+--     SET subscription_tier = 'premium' 
+--     WHERE email = '<user email>'
+--     RETURNING id
+-- )
+-- INSERT INTO subscriptions (user_id, tier, start_date, is_active)
+-- SELECT id, 'premium', NOW(), TRUE FROM target_user;
     -- 1. EXTENSIONS & ENUMS
     CREATE EXTENSION IF NOT EXISTS postgis;
 
@@ -74,6 +90,7 @@
         photo_url VARCHAR(500) NOT NULL,
         is_primary BOOLEAN DEFAULT FALSE,
         photo_order INTEGER DEFAULT 0,
+        file_hash VARCHAR(64),
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         deleted_at TIMESTAMP,
         CONSTRAINT valid_photo_order CHECK (photo_order >= 0)
@@ -439,6 +456,9 @@
 
     -- 2. Add surname to user_profiles table
     ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS surname VARCHAR(100);
+
+    -- 3. Add file_hash to user_photos table
+    ALTER TABLE user_photos ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64);
 
     -- 4. Optional: Create a unique constraint that ignores soft-deleted users
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_active 

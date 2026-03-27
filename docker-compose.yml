@@ -11,8 +11,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=petmatch
-    ports:
-      - "5432:5432"
     networks:
       - petmatch-network
     healthcheck:
@@ -25,10 +23,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # For production, we don't mount the whole code directory.
-    # Only mount static files for uploads persistence.
     volumes:
-      - ./backend/static:/app/static
+      - petmatch_uploads:/app/static/uploads
+    env_file:
+      - ./backend/.env
     environment:
       - POSTGRES_SERVER=db
       - POSTGRES_USER=postgres
@@ -36,11 +34,23 @@ services:
       - POSTGRES_DB=petmatch
       - POSTGRES_PORT=5432
       - SECRET_KEY=supersecretkey
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - petmatch-network
+
+  stripe:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to backend:8000/api/v1/subscription/webhook --api-key ${STRIPE_SECRET_KEY}
+    environment:
+      - STRIPE_API_KEY=${STRIPE_SECRET_KEY}
+    volumes:
+      - ./backend/.env:/work/.env
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
     networks:
       - petmatch-network
 
@@ -48,15 +58,41 @@ services:
     build:
       context: ./frontendv2
       dockerfile: Dockerfile
-    ports:
-      - "80:80"
+    # Expose internally only
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
       - petmatch-network
 
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - petmatch-network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    networks:
+      - petmatch-network
+
 volumes:
   postgres_data:
+  petmatch_uploads:
 
 networks:
   petmatch-network:

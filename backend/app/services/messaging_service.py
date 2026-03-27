@@ -89,8 +89,10 @@ class MessagingService:
                 "match_id": match.id,
                 "text": db_message.message_text
             })
-        except Exception:
-            pass
+        except Exception as e:
+            # Log error but don't break flow
+            import logging
+            logging.getLogger(__name__).error(f"Event Bus Error in send_message: {e}")
         
         # Persist notification for recipient
         try:
@@ -114,8 +116,9 @@ class MessagingService:
                 )
         except Exception as e:
             # Do not interrupt message flow on notification error
-            print(f"Notification Error: {e}")
-            pass
+            import logging
+            logging.getLogger(__name__).error(f"Notification Error in send_message: {e}", exc_info=True)
+
         
         return db_message
 

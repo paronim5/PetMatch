@@ -27,5 +27,10 @@ export const subscriptionService = {
   createCheckoutSession: async (tier: 'premium' | 'premium_plus'): Promise<{ checkout_url: string }> => {
     const token = localStorage.getItem('token');
     return api.post('/subscription/create-checkout-session', { tier }, token || undefined);
+  },
+
+  verifySession: async (sessionId: string): Promise<{ status: string; tier?: string }> => {
+    const token = localStorage.getItem('token');
+    return api.get(`/subscription/verify-session?session_id=${sessionId}`, token || undefined);
   }
 };

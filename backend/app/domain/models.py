@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+import os
 
 from sqlalchemy import (
     Column, Integer, String, Boolean, DateTime, Date, ForeignKey,
@@ -108,10 +109,18 @@ class UserPhoto(Base):
     photo_url = Column(String(500), nullable=False)
     is_primary = Column(Boolean, default=False)
     photo_order = Column(Integer, default=0)
+    file_hash = Column(String(64), nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     deleted_at = Column(DateTime)
 
     user = relationship("User", back_populates="photos")
+
+    @property
+    def thumbnail_url(self):
+        if self.photo_url:
+            base, ext = os.path.splitext(self.photo_url)
+            return f"{base}_thumb{ext}"
+        return None
 
 
 class Interest(Base):
@@ -216,7 +225,7 @@ class Swipe(Base):
     id = Column(Integer, primary_key=True)
     swiper_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     swiped_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    swipe_type = Column(SQLEnum(SwipeType), nullable=False)
+    swipe_type = Column(SQLEnum('like', 'pass', 'super_like', name='swipe_type'), nullable=False)
     expires_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 

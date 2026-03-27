@@ -112,6 +112,10 @@ const LandingPage = () => {
  const [typingText, setTypingText] = useState('');
  const [typingIndex, setTypingIndex] = useState(0);
  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+ const [bgShouldLoad, setBgShouldLoad] = useState(false);
+ const [bgLoaded, setBgLoaded] = useState(false);
+ const [showScene, setShowScene] = useState(false);
+ const heroRef = useRef(null);
  
  const messages = [
    'Find your perfect pet companion.',
@@ -152,14 +156,35 @@ const LandingPage = () => {
 
  // Scroll tracking
  useEffect(() => {
-   const handleScroll = () => {
-    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const progress = window.scrollY / scrollHeight;
+  const handleScroll = () => {
+   const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+   const progress = window.scrollY / scrollHeight;
     setScrollProgress(Math.min(Math.max(progress, 0), 1));
    };
    
-   window.addEventListener('scroll', handleScroll);
-   return () => window.removeEventListener('scroll', handleScroll);
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+ }, []);
+
+ useEffect(() => {
+  const target = heroRef.current;
+  if (!target) {
+    setBgShouldLoad(true);
+    setShowScene(true);
+    return;
+  }
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        setBgShouldLoad(true);
+        setShowScene(true);
+        observer.disconnect();
+      }
+    },
+    { root: null, threshold: 0.1 }
+  );
+  observer.observe(target);
+  return () => observer.disconnect();
  }, []);
 
  // Custom Easing Function
@@ -200,57 +225,72 @@ const LandingPage = () => {
    : 'translateY(0)'; 
 
  return (
-   <div className="relative" style={{ minHeight: '300vh' }}>
+  <div className="relative" style={{ minHeight: '300vh' }}>
     
     {/* --- SCROLL PROGRESS INDICATOR --- */}
     <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 z-50">
       <div 
-       className="h-full bg-gradient-to-r from-orange-400 to-rose-500 transition-all"
+       className="h-full bg-gradient-to-r from-secondary to-primary transition-all"
        style={{ width: `${scrollProgress * 100}%` }}
       />
     </div>
 
-    {/* --- PARALLAX BACKGROUND IMAGE --- */}
     <div 
       className={`fixed top-0 left-0 w-full ${isMobile ? 'h-[150vh]' : 'h-full'}`} 
       style={{
-       backgroundImage: `url('${currentConfig.bgPath}')`, 
+       backgroundImage: bgShouldLoad
+         ? `url('${currentConfig.bgPath}')`
+         : 'linear-gradient(180deg, #fee2e2 0%, #fef3c7 40%, #ecfeff 100%)',
        backgroundSize: 'cover',
        backgroundPosition: 'center top',
        backgroundRepeat: 'no-repeat',
+       filter: bgLoaded ? 'none' : 'blur(20px)',
+       opacity: bgLoaded ? 1 : 0.9,
        zIndex: -1,
        transform: parallaxTransform, 
-       transition: 'transform 0.1s linear',
+       transition: 'transform 0.1s linear, filter 0.4s ease-out, opacity 0.4s ease-out',
       }}
     />
 
-    {/* 3D Canvas Background */}
-    <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
-      <Canvas 
-       camera={{ 
-         position: [0, isMobile ? 0 : -1, 10], 
-         fov: isMobile ? 30 : 22
-       }} 
-       shadows
-      >
-       <Scene scrollProgress={scrollProgress} isMobile={isMobile} />
-      </Canvas>
-    </div>
+    {bgShouldLoad && (
+      <img
+        src={currentConfig.bgPath}
+        alt=""
+        loading="eager"
+        decoding="async"
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        onLoad={() => setBgLoaded(true)}
+      />
+    )}
+
+    {showScene && (
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
+        <Canvas 
+         camera={{ 
+           position: [0, isMobile ? 0 : -1, 10], 
+           fov: isMobile ? 30 : 22
+         }} 
+         shadows
+        >
+         <Scene scrollProgress={scrollProgress} isMobile={isMobile} />
+        </Canvas>
+      </div>
+    )}
     
     {/* Floating Info Boxes (Needs isMobile prop passed) */}
     <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} />
 
     {/* Header */}
-    <header className="absolute top-0 right-0 p-6 z-30">
+    <header className="absolute top-0 right-0 p-4 md:p-6 z-30">
       <div className="flex space-x-3">
        <button 
-         className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors shadow-lg"
+         className="bg-rose-500 text-white px-6 py-3 rounded-lg hover:bg-rose-600 transition-colors shadow-lg min-h-[48px]"
          onClick={() => navigate('/signup')}
        >
          Sign Up
        </button>
        <button 
-         className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors shadow-lg"
+         className="bg-rose-500 text-white px-6 py-3 rounded-lg hover:bg-rose-600 transition-colors shadow-lg min-h-[48px]"
          onClick={() => navigate('/login')}
        >
          Login
@@ -258,19 +298,18 @@ const LandingPage = () => {
       </div>
     </header>
 
-    {/* Hero Section */}
-    <section className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
-      <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-12 max-w-4xl shadow-2xl">
-       <h1 className="text-5xl md:text-7xl font-bold text-rose-600 mb-6 animate-pulse">
+    <section ref={heroRef} className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
+      <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-8 md:p-12 max-w-4xl shadow-2xl mx-4">
+       <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary mb-6 animate-pulse">
          Welcome to PetMatch
        </h1>
-       <p className="text-xl md:text-2xl text-gray-700 mb-8 h-16">
-         {typingText}
-         <span className="animate-pulse">|</span>
+       <p className="text-lg md:text-2xl text-gray-700 mb-8 h-16 flex items-center justify-center">
+         <span>{typingText}</span>
+         <span className="animate-pulse ml-1 text-primary">|</span>
        </p>
        <button 
          onClick={scrollToSection}
-         className="bg-gradient-to-r from-orange-400 to-rose-500 text-white px-8 py-4 rounded-full text-xl font-semibold hover:scale-105 transition-transform shadow-lg"
+         className="bg-gradient-to-r from-secondary to-primary text-white px-6 py-3 md:px-8 md:py-4 rounded-full text-lg md:text-xl font-semibold hover:scale-105 transition-transform shadow-lg active:scale-95"
        >
          Start Your Journey
        </button>
@@ -281,19 +320,19 @@ const LandingPage = () => {
     <div id="floating-boxes-start" className="h-[200vh]"></div>
 
     {/* Features Section */}
-    <section className="relative z-10 py-20 px-4 bg-white/80 backdrop-blur-md rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+    <section className="relative z-10 py-16 md:py-20 px-4 bg-white/80 backdrop-blur-md rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
       <div className="max-w-6xl mx-auto">
-       <h2 className="text-4xl font-bold text-center text-rose-600 mb-12">Why Choose PetMatch?</h2>
-       <div className="grid md:grid-cols-3 gap-8">
+       <h2 className="text-3xl md:text-4xl font-bold text-center text-primary mb-8 md:mb-12">Why Choose PetMatch?</h2>
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
          {[
           { icon: '🏠', title: 'Find Your Match', desc: 'Browse thousands of adorable pets waiting for homes' },
           { icon: '❤️', title: 'Safe & Secure', desc: 'Verified shelters and responsible adoption process' },
           { icon: '🎉', title: 'Support Network', desc: 'Connect with pet owners and get expert advice' }
          ].map((feature, i) => (
-          <div key={i} className="bg-white rounded-xl p-8 shadow-lg hover:shadow-2xl transition-shadow">
-            <div className="text-6xl mb-4">{feature.icon}</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-3">{feature.title}</h3>
-            <p className="text-gray-600">{feature.desc}</p>
+          <div key={i} className="bg-white rounded-xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <div className="text-5xl md:text-6xl mb-4">{feature.icon}</div>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">{feature.title}</h3>
+            <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
           </div>
          ))}
        </div>

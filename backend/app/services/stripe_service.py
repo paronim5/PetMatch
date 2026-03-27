@@ -1,12 +1,13 @@
 import stripe
 import logging
+import json
 from typing import Optional, Dict
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.domain.models import User, Subscription, SubscriptionTierType
 from app.domain.enums import SubscriptionTierType
 from datetime import datetime, timedelta
-
+#todo suka nado https protokol naxui a dila etogo nado domain name suka a s secret key vse ok a snizu netx
 logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -14,8 +15,9 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 # Map internal tiers to Stripe Price IDs
 # In a real app, these should be in config or DB
 # You should replace these with your actual Stripe Price IDs
+##price_1SgbUb1guJQMZVvrmG1UUoXP  prod_TdtH4pJXQkeUDI
 TIER_PRICE_IDS = {
-    "premium": "price_1SgQDL1guJQMZVvrowxunyud", # Placeholder
+    "premium": "price_1SgbUb1guJQMZVvrmG1UUoXP", # Placeholder
     "premium_plus": "price_1SgQE51guJQMZVvrBOoeDfJ6" # Placeholder
 }
 
@@ -67,26 +69,30 @@ class StripeService:
         
         if not settings.STRIPE_WEBHOOK_SECRET:
              logger.warning("Stripe Webhook Secret not set. Skipping verification (unsafe in production).")
-             # In dev, we might want to proceed if we trust the source, but better to fail.
-             # raise ValueError("Webhook secret not configured")
-        
-        try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-            )
-        except ValueError as e:
-            # Invalid payload
-            logger.error(f"Invalid payload: {e}")
-            raise e
-        except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
-            logger.error(f"Invalid signature: {e}")
-            raise e
+             # Skip verification in dev if secret is missing
+             try:
+                event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
+             except Exception as e:
+                logger.error(f"Invalid payload: {e}")
+                raise e
+        else:
+            try:
+                event = stripe.Webhook.construct_event(
+                    payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+                )
+            except ValueError as e:
+                # Invalid payload
+                logger.error(f"Invalid payload: {e}")
+                raise e
+            except stripe.error.SignatureVerificationError as e:
+                # Invalid signature
+                logger.error(f"Invalid signature: {e}")
+                raise e
 
         # Handle the event
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
-            self._handle_checkout_session_completed(db, session)
+            self.handle_checkout_session_completed(db, session)
         elif event['type'] == 'invoice.payment_succeeded':
             # Handle recurring payment success if needed
             # For now we assume subscription is active until cancelled or payment fails
@@ -95,7 +101,7 @@ class StripeService:
             subscription = event['data']['object']
             self._handle_subscription_deleted(db, subscription)
             
-    def _handle_checkout_session_completed(self, db: Session, session):
+    def handle_checkout_session_completed(self, db: Session, session):
         user_id = session.get('client_reference_id')
         tier = session.get('metadata', {}).get('tier')
         subscription_id = session.get('subscription')

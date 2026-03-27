@@ -74,3 +74,26 @@ To test webhooks locally, use the Stripe CLI:
 *   **401 Unauthorized:** Ensure you are logged in. If the error persists, check your token expiration.
 *   **Invalid Tier:** Ensure the Price IDs in `stripe_service.py` match your Stripe Dashboard.
 *   **Webhook Error:** Check server logs. Ensure `STRIPE_WEBHOOK_SECRET` is correct.
+
+
+
+
+WITH target_match AS (
+    INSERT INTO matches (user1_id, user2_id, matched_at, is_active)
+    VALUES (
+        LEAST(51, 24), 
+        GREATEST(51, 24), 
+        CURRENT_TIMESTAMP, 
+        TRUE
+    )
+    ON CONFLICT (user1_id, user2_id) DO UPDATE 
+    SET is_active = TRUE 
+    RETURNING id
+)
+INSERT INTO messages (match_id, sender_id, message_text, created_at)
+VALUES (
+    (SELECT id FROM target_match), 
+    51, 
+    'uz te nechci videt kundo. jdi do piči', 
+    '2025-12-30 18:36:00'
+);

@@ -7,17 +7,31 @@ from app.core.logging import logger
 from sqlalchemy import text
 from datetime import date, timedelta
 from app.infrastructure.database import Database
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.limiter import limiter
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # TRUNCATE TABLE users cascade; delete all users
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
+# Prometheus metrics
+Instrumentator().instrument(app).expose(app)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Mount static files
 import os
-if not os.path.exists("static/uploads"):
-    os.makedirs("static/uploads")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+try:
+    if not os.path.exists("static/uploads"):
+        os.makedirs("static/uploads", exist_ok=True)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception as e:
+    logger.error(f"Failed to mount static files: {e}")
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:
@@ -40,12 +54,40 @@ else:
         allow_headers=["*"],
     )
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    try:
+        response = await call_next(request)
+        logger.info(f"Request finished: {request.method} {request.url.path} - Status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Request failed: {request.method} {request.url.path} - Error: {e}")
+        raise
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting up PetMatch Backend...")
     logger.info(f"Allowed CORS Origins: {settings.BACKEND_CORS_ORIGINS}")
+    
+    # Check database connectivity
+    try:
+        db = Database()
+        # Try to connect and run a simple query
+        with db.engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        logger.info("Database connection successful.")
+    except Exception as e:
+        logger.error(f"FATAL: Could not connect to database: {e}")
+        # We continue to let the app start, but it will likely fail later
+    
+    logger.info("Backend is ready to receive requests.")
     try:
         today = date.today()
         first_day = today.replace(day=1)
@@ -108,6 +150,10 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Shutting down PetMatch Backend...")
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 @app.get("/")
 def root():

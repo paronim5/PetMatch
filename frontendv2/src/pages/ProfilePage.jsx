@@ -2,11 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { userService } from '../services/user';
 import { subscriptionService } from '../services/subscription';
+import { validateImage } from '../utils/imageValidation';
 import { 
   FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical, 
   FaGraduationCap, FaBriefcase, FaWineGlass, FaSmoking, 
-  FaHeart, FaSignOutAlt, FaUserTimes, FaShieldAlt, FaCrown, FaPlay, FaVideo
+  FaHeart, FaSignOutAlt, FaUserTimes, FaShieldAlt, FaCrown, FaPlay, FaVideo,
+  FaCheckCircle, FaTimesCircle
 } from 'react-icons/fa';
+
+class PhotoSectionErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('PhotoSectionErrorBoundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4">
+          Something went wrong while loading the photo section. Please reload the page and try again.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -38,9 +66,8 @@ const ProfilePage = () => {
     interests: ''
   });
 
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
-  const [newPhotoFile, setNewPhotoFile] = useState(null);
-  const [newPhotoPreview, setNewPhotoPreview] = useState(null);
+  const [pendingPhotos, setPendingPhotos] = useState([]);
+  const [photoValidations, setPhotoValidations] = useState({});
   const [showPhotoInput, setShowPhotoInput] = useState(false);
   const [preferences, setPreferences] = useState({
     min_age: 18,
@@ -54,11 +81,14 @@ const ProfilePage = () => {
   });
   const [formError, setFormError] = useState('');
   const [prefsError, setPrefsError] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
+      setLoading(false);
       navigate('/login');
     } else {
       fetchUserAndPhotos();
@@ -67,15 +97,27 @@ const ProfilePage = () => {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
-      setSuccessMessage('Subscription upgraded successfully!');
-      fetchSubscription();
-      setSearchParams({});
-    }
-    if (searchParams.get('canceled') === 'true') {
-      setFormError('Subscription upgrade canceled.');
-      setSearchParams({});
-    }
+    const checkStatus = async () => {
+      if (searchParams.get('success') === 'true') {
+        const sessionId = searchParams.get('session_id');
+        if (sessionId) {
+          try {
+             // Verify session manually
+             await subscriptionService.verifySession(sessionId);
+          } catch (e) {
+             console.error("Verification failed", e);
+          }
+        }
+        setSuccessMessage('Subscription upgraded successfully!');
+        fetchSubscription();
+        setSearchParams({});
+      }
+      if (searchParams.get('canceled') === 'true') {
+        setFormError('Subscription upgrade canceled.');
+        setSearchParams({});
+      }
+    };
+    checkStatus();
   }, [searchParams, setSearchParams]);
 
   const fetchSubscription = async () => {
@@ -84,6 +126,10 @@ const ProfilePage = () => {
       setSubscription(status);
     } catch (error) {
       console.error("Failed to fetch subscription:", error);
+      if (error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     }
   };
 
@@ -120,6 +166,16 @@ const ProfilePage = () => {
     }
   };
 
+  // Helper to sanitize photo URLs
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
+    }
+    return url;
+  };
+
   const fetchUserAndPhotos = async () => {
     setLoading(true);
     try {
@@ -151,6 +207,14 @@ const ProfilePage = () => {
             drinking: userData.profile.drinking || 'never',
             interests: ''
           });
+        }
+      } else {
+        // Handle 401 from user fetch
+        const error = userRes.reason;
+        if (error && error.message && (error.message.includes('401') || error.message.includes('Unauthorized'))) {
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
         }
       }
 
@@ -242,27 +306,147 @@ const ProfilePage = () => {
     }
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setNewPhotoFile(file);
-      setNewPhotoPreview(URL.createObjectURL(file));
+  const removePendingPhoto = (index) => {
+    const nextFiles = [...pendingPhotos];
+    const removed = nextFiles.splice(index, 1)[0];
+    setPendingPhotos(nextFiles);
+    setPhotoValidations((prev) => {
+      const next = { ...prev };
+      if (removed && removed.name in next) {
+        delete next[removed.name];
+      }
+      return next;
+    });
+  };
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    if (pendingPhotos.length + files.length > 10) {
+      setUploadError('Maximum 10 photos allowed.');
+      return;
     }
+
+    setUploadError('');
+
+    const uniqueFiles = files.filter(file =>
+      !pendingPhotos.some(existing => existing.name === file.name && existing.size === file.size)
+    );
+
+    if (uniqueFiles.length < files.length) {
+      console.log('Skipped duplicate files in profile upload');
+    }
+
+    if (uniqueFiles.length === 0) return;
+
+    const newFiles = [...pendingPhotos, ...uniqueFiles];
+    setPendingPhotos(newFiles);
+
+    for (const file of uniqueFiles) {
+      setPhotoValidations(prev => ({
+        ...prev,
+        [file.name]: { status: 'loading', message: 'Validating...' }
+      }));
+
+      const clientValid = await validateImage(file);
+      if (!clientValid.ok) {
+        setPhotoValidations(prev => ({
+          ...prev,
+          [file.name]: { status: 'error', message: clientValid.message }
+        }));
+        continue;
+      }
+
+      try {
+        const result = await userService.validatePhoto(file);
+
+        if (result.quarantine) {
+          const reason =
+            result.rejection_reason ||
+            (result.has_human_face
+              ? 'Human face detected. Please upload a pet photo without people.'
+              : !result.is_animal
+                ? 'No animal detected. Please upload a clear pet photo.'
+                : result.unsafe_reason ||
+                  'This photo cannot be used as a profile picture.');
+
+          setPhotoValidations(prev => ({
+            ...prev,
+            [file.name]: { status: 'error', message: reason }
+          }));
+        } else if (!result.is_safe) {
+          const unsafeMessage =
+            result.unsafe_category === 'nsfw'
+              ? (result.unsafe_reason ||
+                 'Potential NSFW content detected. Please use a safe, family-friendly pet photo.')
+              : (result.security_reason ||
+                 'Unsafe content detected. Please try another image.');
+
+          setPhotoValidations(prev => ({
+            ...prev,
+            [file.name]: { status: 'error', message: unsafeMessage }
+          }));
+        } else if (!result.is_animal && !result.has_human_face) {
+          setPhotoValidations(prev => ({
+            ...prev,
+            [file.name]: {
+              status: 'error',
+              message: 'No animal or face detected. Please upload a clear pet photo.'
+            }
+          }));
+        } else {
+          setPhotoValidations(prev => ({
+            ...prev,
+            [file.name]: { status: 'success', message: 'Valid' }
+          }));
+        }
+      } catch (err) {
+        console.error('AI validation failed:', err);
+        let msg = 'Validation failed';
+        const anyErr = err && err.response && err.response.data && err.response.data.detail;
+        if (anyErr) msg = anyErr;
+        setPhotoValidations(prev => ({
+          ...prev,
+          [file.name]: { status: 'error', message: msg }
+        }));
+      }
+    }
+
+    e.target.value = '';
   };
 
   const handleUploadPhoto = async (e) => {
     e.preventDefault();
-    if (!newPhotoFile) return;
+    const validPhotos = pendingPhotos.filter(
+      (f) => photoValidations[f.name]?.status === 'success'
+    );
+
+    if (validPhotos.length === 0) {
+      setUploadError('Please select at least one valid photo.');
+      return;
+    }
+
+    const anyLoading = pendingPhotos.some(
+      (f) => photoValidations[f.name]?.status === 'loading'
+    );
+    if (anyLoading) {
+      setUploadError('Please wait for photo validation to complete.');
+      return;
+    }
     
     try {
-      await userService.uploadPhoto(newPhotoFile);
-      setNewPhotoFile(null);
-      setNewPhotoPreview(null);
+      setPhotoUploading(true);
+      await userService.uploadPhotos(validPhotos);
+      setPendingPhotos([]);
+      setPhotoValidations({});
       setShowPhotoInput(false);
       fetchUserAndPhotos();
     } catch (error) {
       console.error('Failed to add photo:', error);
-      alert('Failed to add photo');
+      setUploadError(error.message || 'Failed to add photo');
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -278,6 +462,12 @@ const ProfilePage = () => {
   };
 
   const useCurrentLocation = () => {
+    // Check for secure context
+    if (!window.isSecureContext) {
+      alert("Location detection requires a secure connection (HTTPS) or localhost. Please enter your location manually.");
+      return;
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -290,7 +480,20 @@ const ProfilePage = () => {
         },
         (error) => {
           console.error("Error getting location:", error);
-          alert("Could not get your location. Please allow location access.");
+          let msg = "Could not get your location.";
+          if (error.code === 1) {
+             msg += " Permission denied. Please allow location access.";
+          } else if (error.code === 2) {
+             msg += " Position unavailable.";
+          } else if (error.code === 3) {
+             msg += " Timeout.";
+          }
+          alert(msg + " Please enter manually.");
+        },
+        {
+           enableHighAccuracy: true,
+           timeout: 10000,
+           maximumAge: 0
         }
       );
     } else {
@@ -301,11 +504,11 @@ const ProfilePage = () => {
   if (loading) return <div className="min-h-screen flex justify-center items-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-gray-50 py-4 px-3 md:py-12 md:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-4 md:space-y-8">
         
         {/* Subscription Card */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow rounded-lg p-4 md:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
               <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -386,14 +589,24 @@ const ProfilePage = () => {
                 if (!window.confirm('This will permanently delete your account. Continue?')) return;
                 try {
                   const token = localStorage.getItem('token');
-                  await fetch(`${import.meta.env.DEV ? '/api' : 'http://localhost:8000/api/v1'}/users/me`, {
+                  const response = await fetch(`${import.meta.env.DEV ? '/api' : 'https://paroniim.xyz/api/v1'}/users/me`, {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${token}` }
                   });
+                  
+                  if (!response.ok) {
+                     const data = await response.json();
+                     if (response.status === 403) {
+                         alert(data.detail); // Show the backend message if restricted
+                         return;
+                     }
+                     throw new Error(data.detail || 'Failed to delete account');
+                  }
+                  
                   localStorage.removeItem('token');
                   navigate('/signup');
                 } catch (e) {
-                  alert('Failed to delete account');
+                  alert(e.message || 'Failed to delete account');
                 }
               }}
               className="bg-white py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 flex items-center gap-2"
@@ -428,7 +641,8 @@ const ProfilePage = () => {
         )}
 
         {/* Photos Section */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <PhotoSectionErrorBoundary>
+        <div className="bg-white shadow rounded-lg p-4 md:p-6">
           <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                <FaCamera className="text-rose-500" /> Photos
@@ -442,43 +656,135 @@ const ProfilePage = () => {
           </div>
 
           {showPhotoInput && (
-            <form onSubmit={handleUploadPhoto} className="mb-6 space-y-4">
-              <div className="flex gap-2 items-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-rose-50 file:text-rose-700
-                    hover:file:bg-rose-100"
-                />
-                <button
-                  type="submit"
-                  disabled={!newPhotoFile}
-                  className="bg-rose-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
-                >
-                  Upload
-                </button>
-              </div>
-              {newPhotoPreview && (
-                <div className="w-32 h-32 relative rounded-lg overflow-hidden border border-gray-300">
-                  <img src={newPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+            <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+              <h4 className="font-medium text-gray-700 mb-2">Upload New Photo</h4>
+              
+              {/* Upload Guidelines */}
+                      <div className="mb-4 p-4 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100">
+                        <p className="font-bold mb-3 flex items-center"><FaShieldAlt className="mr-2"/> Strict Content Guidelines:</p>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="bg-white p-3 rounded border border-green-200">
+                              <p className="font-bold text-green-700 mb-2 flex items-center"><FaCheckCircle className="mr-1"/> ACCEPTED</p>
+                              <ul className="space-y-1 text-gray-600 text-xs">
+                                <li>• Clear animal photos</li>
+                                <li>• Cats, dogs, birds, etc.</li>
+                                <li>• Well-lit & high quality</li>
+                              </ul>
+                           </div>
+                           <div className="bg-white p-3 rounded border border-red-200">
+                              <p className="font-bold text-red-700 mb-2 flex items-center"><FaTimesCircle className="mr-1"/> REJECTED</p>
+                              <ul className="space-y-1 text-gray-600 text-xs">
+                                <li>• Human faces (Strict)</li>
+                                <li>• Blurry or dark photos</li>
+                                <li>• Non-animal objects</li>
+                              </ul>
+                           </div>
+                        </div>
+                        <p className="mt-3 text-xs text-blue-600">
+                           <strong>Note:</strong> Our AI automatically screens all uploads. Violations may result in account restrictions.
+                        </p>
+                      </div>
+
+              {uploadError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded border border-red-200">
+                  {uploadError}
                 </div>
               )}
-            </form>
+              
+              <form onSubmit={handleUploadPhoto} className="space-y-4">
+                <input 
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100"
+                />
+
+                {pendingPhotos.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {pendingPhotos.map((file, idx) => (
+                      <div key={idx} className="relative group border rounded-lg p-2 bg-gray-50">
+                        <div className="aspect-square bg-gray-200 rounded mb-2 overflow-hidden">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt="preview"
+                            className="w-full h-full object-cover"
+                            onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                          />
+                        </div>
+                        <div className="text-xs truncate font-medium text-gray-700">{file.name}</div>
+                        <div className="mt-1 text-xs font-medium">
+                          {photoValidations[file.name]?.status === 'loading' && (
+                            <span className="text-blue-600">Validating...</span>
+                          )}
+                          {photoValidations[file.name]?.status === 'success' && (
+                            <span className="text-green-600">✓ Valid</span>
+                          )}
+                          {photoValidations[file.name]?.status === 'error' && (
+                            <span className="text-red-600">✕ {photoValidations[file.name]?.message}</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removePendingPhoto(idx);
+                          }}
+                          className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove photo"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowPhotoInput(false);
+                      setPendingPhotos([]);
+                      setPhotoValidations({});
+                      setUploadError('');
+                      setPhotoUploading(false);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={pendingPhotos.length === 0 || photoUploading}
+                    className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                      pendingPhotos.length === 0 || photoUploading
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-rose-600 hover:bg-rose-700'
+                    }`}
+                  >
+                    {photoUploading ? 'Uploading...' : 'Upload Photo'}
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {photos.map((photo) => (
               <div key={photo.id} className="relative group aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden">
-                <img 
-                  src={photo.photo_url} 
-                  alt="User photo" 
+                <img
+                  src={getPhotoUrl(photo.photo_url) || 'https://via.placeholder.com/150'}
+                  alt="Profile"
                   className="object-cover w-full h-40"
-                  onError={(e) => {e.target.src = 'https://via.placeholder.com/150?text=Error'}} 
+                  onError={(e) => {
+                    // Try to load a local placeholder if external fails, or just hide it
+                    e.target.src = '/vite.svg'; // Fallback to a local asset we know exists
+                    e.target.onerror = null; // Prevent infinite loop
+                  }} 
                 />
                 <button
                   onClick={() => handleDeletePhoto(photo.id)}
@@ -500,6 +806,7 @@ const ProfilePage = () => {
             )}
           </div>
         </div>
+        </PhotoSectionErrorBoundary>
 
         {/* Details Form */}
         <div className="bg-white shadow rounded-lg p-6">

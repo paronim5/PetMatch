@@ -14,6 +14,10 @@ export default defineConfig({
         // Ensure we are replacing /api with /api/v1 correctly
         rewrite: (path) => path.replace(/^\/api/, '/api/v1'), 
       },
+      '/static': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      }
     },
   },
 })

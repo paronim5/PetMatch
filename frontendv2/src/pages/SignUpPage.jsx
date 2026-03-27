@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
 import { authService } from '../services/auth';
 import { userService } from '../services/user';
+import { validateImage } from '../utils/imageValidation';
 
 const SignUpPage = () => {
   const [step, setStep] = useState(1);
@@ -39,8 +40,9 @@ const SignUpPage = () => {
     max_distance: 50,
     preferred_genders: ['female', 'male']
   });
-  const [loading, setLoading] = useState(false);
-  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState('');
+  const [profilePhotoFiles, setProfilePhotoFiles] = useState([]);
+  const [photoValidations, setPhotoValidations] = useState({});
   const [photoError, setPhotoError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -109,6 +111,20 @@ const SignUpPage = () => {
             error = 'Passwords do not match.';
         }
         break;
+      case 'height_value':
+        if (value) {
+            const val = parseInt(value);
+            if (currentData.height_unit === 'cm') {
+                if (val < 100 || val > 250) {
+                    error = 'Height must be between 100 and 250 cm';
+                }
+            } else if (currentData.height_unit === 'feet_inches') {
+                if (val < 36 || val > 96) {
+                    error = 'Height must be between 36 and 96 inches';
+                }
+            }
+        }
+        break;
     }
     return error;
   };
@@ -127,6 +143,10 @@ const SignUpPage = () => {
         // If password changes, re-validate confirmPassword
         if (name === 'password' && nextFormData.confirmPassword) {
             next.confirmPassword = validateField('confirmPassword', nextFormData.confirmPassword, nextFormData);
+        }
+        // If height unit changes, re-validate height value
+        if (name === 'height_unit' && nextFormData.height_value) {
+            next.height_value = validateField('height_value', nextFormData.height_value, nextFormData);
         }
         return next;
     });
@@ -153,6 +173,12 @@ const SignUpPage = () => {
             currentStepErrors.date_of_birth = error;
             hasError = true;
         }
+    } else if (step === 3) {
+        const error = validateField('height_value', formData.height_value, formData);
+        if (error) {
+            currentStepErrors.height_value = error;
+            hasError = true;
+        }
     }
 
     if (hasError) {
@@ -169,6 +195,12 @@ const SignUpPage = () => {
   };
 
   const useCurrentLocation = () => {
+    // Check for secure context
+    if (!window.isSecureContext) {
+      alert("Location detection requires a secure connection (HTTPS) or localhost. Please enter your location manually.");
+      return;
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -180,12 +212,126 @@ const SignUpPage = () => {
           alert(`Location found: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
         },
         (error) => {
-          alert('Could not get your location. Please allow location access.');
+          console.error("Error getting location", error);
+          let msg = "Could not get your location.";
+          if (error.code === 1) {
+             msg += " Permission denied. Please allow location access.";
+          } else if (error.code === 2) {
+             msg += " Position unavailable.";
+          } else if (error.code === 3) {
+             msg += " Timeout.";
+          }
+          alert(msg + " Please enter manually.");
+        },
+        {
+           enableHighAccuracy: true,
+           timeout: 10000,
+           maximumAge: 0
         }
       );
     } else {
       alert('Geolocation is not supported by this browser.');
     }
+  };
+
+  const handleFileSelect = async (files) => {
+    if (files.length === 0) return;
+    
+    // Limit total photos
+    if (profilePhotoFiles.length + files.length > 10) {
+        setPhotoError("Maximum 10 photos allowed.");
+        return;
+    }
+    
+    setPhotoError('');
+    
+    // Filter duplicates
+    const uniqueFiles = files.filter(file => 
+        !profilePhotoFiles.some(existing => existing.name === file.name && existing.size === file.size)
+    );
+    
+    if (uniqueFiles.length < files.length) {
+         // Could show a warning, but for now just ignoring duplicates
+         console.log("Skipped duplicates");
+    }
+
+    const newFiles = [...profilePhotoFiles, ...uniqueFiles];
+    setProfilePhotoFiles(newFiles);
+    
+    // Validate new files
+    for (const file of uniqueFiles) {
+        // Init status
+        setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'loading', message: 'Validating...' } }));
+        
+        // 1. Client-side checks
+        const clientValid = await validateImage(file);
+        if (!clientValid.ok) {
+            setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: clientValid.message } }));
+            continue;
+        }
+        
+        // 2. Server-side AI check
+        try {
+            const result = await userService.validatePhoto(file);
+            
+            if (result.quarantine) {
+                const reason =
+                  result.rejection_reason ||
+                  (result.has_human_face
+                    ? 'Human face detected. Please upload a pet photo without people.'
+                    : !result.is_animal
+                      ? 'No animal detected. Please upload a clear pet photo.'
+                      : result.unsafe_reason ||
+                        'This photo cannot be used as a profile picture.');
+                
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: { status: 'error', message: reason }
+                }));
+            } else if (!result.is_safe) {
+                const unsafeMessage =
+                  result.unsafe_category === 'nsfw'
+                    ? (result.unsafe_reason ||
+                       'Potential NSFW content detected. Please use a safe, family-friendly pet photo.')
+                    : (result.security_reason ||
+                       'Unsafe content detected. Please try another image.');
+                
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: { status: 'error', message: unsafeMessage }
+                }));
+            } else if (!result.is_animal && !result.has_human_face) {
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: {
+                    status: 'error',
+                    message: 'No animal or face detected. Please upload a clear pet photo.'
+                  }
+                }));
+            } else {
+                setPhotoValidations(prev => ({
+                  ...prev,
+                  [file.name]: { status: 'success', message: 'Valid' }
+                }));
+            }
+        } catch (err) {
+            console.error(err);
+            let msg = 'Validation failed';
+            if (err.response?.data?.detail) msg = err.response.data.detail;
+            setPhotoValidations(prev => ({ ...prev, [file.name]: { status: 'error', message: msg } }));
+        }
+    }
+  };
+
+  const removePhoto = (index) => {
+      const newFiles = [...profilePhotoFiles];
+      const removed = newFiles.splice(index, 1)[0];
+      setProfilePhotoFiles(newFiles);
+      setPhotoValidations(prev => {
+          const next = { ...prev };
+          delete next[removed.name];
+          return next;
+      });
   };
 
   const handleSubmit = async (e) => {
@@ -206,30 +352,69 @@ const SignUpPage = () => {
       return;
     }
     const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
-    // Validate photo
-    if (!profilePhotoFile) {
-      setErrorMessage('Please upload a profile picture');
-      return;
-    }
-    const isValid = await validateImage(profilePhotoFile);
-    if (!isValid.ok) {
-      setErrorMessage(isValid.message);
+    
+    // Check for invalid photos
+    const hasInvalidPhotos = profilePhotoFiles.some(f => photoValidations[f.name]?.status === 'error');
+    if (hasInvalidPhotos) {
+      const msg = 'One or more photos are invalid. Please remove them before continuing.';
+      setPhotoError(msg);
+      setErrorMessage(msg);
       return;
     }
 
-    setLoading(true);
+    // Validate photo
+    const validPhotos = profilePhotoFiles.filter(f => photoValidations[f.name]?.status === 'success');
+    
+    if (validPhotos.length === 0) {
+      setPhotoError('Please upload at least one valid profile picture');
+      setErrorMessage('Please upload at least one valid profile picture');
+      return;
+    }
+    
+    // Check if any are still loading
+    const anyLoading = profilePhotoFiles.some(f => photoValidations[f.name]?.status === 'loading');
+    if (anyLoading) {
+        setPhotoError('Please wait for photo validation to complete');
+        return;
+    }
+
+    setSubmitStatus('Creating account...');
     try {
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] Starting registration process...`);
+      
       // 1. Register User
+      console.log(`[${timestamp}] Step 1: Registering user...`);
+      console.log(`[${timestamp}] details: email=${formData.email}, username=${formData.username}, phone=${phoneE164}`);
+      
       await authService.register(formData.email, formData.password, phoneE164, formData.username || undefined);
+      console.log(`[${new Date().toISOString()}] Step 1: User registered successfully.`);
       
       // 2. Auto Login
+      setSubmitStatus('Logging in...');
+      console.log(`[${new Date().toISOString()}] Step 2: Auto-logging in with email=${formData.email}...`);
       const loginData = await authService.login(formData.email, formData.password);
       localStorage.setItem('token', loginData.access_token);
+      console.log(`[${new Date().toISOString()}] Step 2: Login successful, token stored.`);
 
-      // 2a. Upload Profile Photo
-      await userService.uploadPhoto(profilePhotoFile);
+      // 2a. Upload Profile Photos
+      const photosToUpload = profilePhotoFiles.filter(f => photoValidations[f.name]?.status === 'success');
+      
+      if (photosToUpload.length > 0) {
+        console.log(`[${new Date().toISOString()}] Step 2a: Uploading ${photosToUpload.length} photos...`);
+        try {
+            const photoResult = await userService.uploadPhotos(photosToUpload);
+            console.log(`[${new Date().toISOString()}] Step 2a: Photos uploaded successfully:`, photoResult);
+        } catch (photoErr) {
+            console.error(`[${new Date().toISOString()}] Step 2a: Photo upload failed details:`, photoErr);
+            throw new Error(`Photo upload failed: ${photoErr.message}`);
+        }
+      } else {
+        console.log(`[${new Date().toISOString()}] Step 2a: No valid profile photos to upload.`);
+      }
 
       // 3. Update Profile
+      console.log(`[${new Date().toISOString()}] Step 3: Updating profile details...`);
       // Append interests to bio for now
       let finalBio = formData.bio;
       if (formData.interests) {
@@ -254,41 +439,53 @@ const SignUpPage = () => {
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null
       };
+      console.log(`[${new Date().toISOString()}] Profile data payload:`, profileData);
+      
       await userService.updateProfile(profileData);
+      console.log(`[${new Date().toISOString()}] Step 3: Profile updated successfully.`);
       
       // 3b. Set Preferences
-      await userService.updatePreferences({
+      console.log(`[${new Date().toISOString()}] Step 3b: Updating preferences...`);
+      const prefData = {
         min_age: formData.min_age,
         max_age: formData.max_age,
         max_distance: formData.max_distance,
         preferred_genders: formData.preferred_genders
-      });
+      };
+      console.log(`[${new Date().toISOString()}] Preferences payload:`, prefData);
+      
+      await userService.updatePreferences(prefData);
+      console.log(`[${new Date().toISOString()}] Step 3b: Preferences updated successfully.`);
 
       // 4. Redirect
+      console.log(`[${new Date().toISOString()}] Step 4: Registration complete. Redirecting to /matching...`);
       setSuccessMessage('Registration successful! Welcome to PetMatch.');
       navigate('/matching');
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error(`[${new Date().toISOString()}] Registration failed. Full error object:`, error);
+      if (error.stack) {
+        console.error(`[${new Date().toISOString()}] Error stack:`, error.stack);
+      }
       let errorMessage = error.message;
       if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       }
       
-      if (errorMessage.includes("already exists")) {
+      if (errorMessage && errorMessage.includes("already exists")) {
         setErrorMessage('This email is already registered. Please log in instead.');
         navigate('/login');
       } else {
-        setErrorMessage('We could not complete your registration. Please check your details and try again.');
+        setErrorMessage(errorMessage || 'We could not complete your registration. Please check your details and try again.');
       }
     } finally {
-      setLoading(false);
+      setSubmitStatus('');
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-peach-light via-peach-medium to-rose-light p-4">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold text-center text-rose-dark mb-6">
+      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h2 className="text-xl md:text-2xl font-bold text-center text-primary mb-6">
           {step === 1 && "Create Account"}
           {step === 2 && "Tell us about yourself"}
           {step === 3 && "Lifestyle & Work"}
@@ -306,10 +503,10 @@ const SignUpPage = () => {
         )}
 
         <div className="mb-6 flex justify-between items-center px-4">
-          <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
-          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 2 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
-          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 3 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
-          <div className={`h-2 flex-1 rounded-full ${step >= 4 ? 'bg-rose-500' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 mx-2 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-gray-200'}`}></div>
+          <div className={`h-2 flex-1 rounded-full ${step >= 4 ? 'bg-primary' : 'bg-gray-200'}`}></div>
         </div>
 
         <form onSubmit={step === 4 ? handleSubmit : nextStep} className="space-y-4">
@@ -323,7 +520,7 @@ const SignUpPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   required
                 />
               </div>
@@ -334,7 +531,7 @@ const SignUpPage = () => {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.username ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                   placeholder="yourname"
                 />
@@ -351,7 +548,7 @@ const SignUpPage = () => {
                     name="phone_country_code"
                     value={formData.phone_country_code}
                     onChange={handleChange}
-                    className="mt-1 block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-36 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="+420">Czech Republic (+420)</option>
                     <option value="+1">United States (+1)</option>
@@ -371,7 +568,7 @@ const SignUpPage = () => {
                     onChange={handleChange}
                     inputMode="tel"
                     autoComplete="tel"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                     required
                     placeholder="777427379
                     "
@@ -387,7 +584,7 @@ const SignUpPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                 />
                 {fieldErrors.password && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.password}</p>}
@@ -399,7 +596,7 @@ const SignUpPage = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                 />
                 {fieldErrors.confirmPassword && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.confirmPassword}</p>}
@@ -416,7 +613,7 @@ const SignUpPage = () => {
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   required
                 />
               </div>
@@ -427,7 +624,7 @@ const SignUpPage = () => {
                   name="surname"
                   value={formData.surname}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 />
               </div>
               <div>
@@ -437,7 +634,7 @@ const SignUpPage = () => {
                   name="date_of_birth"
                   value={formData.date_of_birth}
                   onChange={handleChange}
-                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.date_of_birth ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark`}
+                  className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.date_of_birth ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                   required
                 />
                 {fieldErrors.date_of_birth && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.date_of_birth}</p>}
@@ -448,7 +645,7 @@ const SignUpPage = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -470,19 +667,20 @@ const SignUpPage = () => {
                     name="height_value"
                     value={formData.height_value}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className={`mt-1 block w-full px-3 py-2 border ${fieldErrors.height_value ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:ring-primary focus:border-primary`}
                     placeholder="Height"
                   />
                   <select
                     name="height_unit"
                     value={formData.height_unit}
                     onChange={handleChange}
-                    className="mt-1 block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="cm">cm</option>
                     <option value="feet_inches">ft</option>
                   </select>
                 </div>
+                {fieldErrors.height_value && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.height_value}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Education</label>
@@ -491,7 +689,7 @@ const SignUpPage = () => {
                   name="education"
                   value={formData.education}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="Highest degree/school"
                 />
               </div>
@@ -502,7 +700,7 @@ const SignUpPage = () => {
                   name="occupation"
                   value={formData.occupation}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="Current job"
                 />
               </div>
@@ -512,7 +710,7 @@ const SignUpPage = () => {
                   name="relationship_goal"
                   value={formData.relationship_goal}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                 >
                   <option value="relationship">Relationship</option>
                   <option value="casual">Casual</option>
@@ -527,7 +725,7 @@ const SignUpPage = () => {
                     name="smoking"
                     value={formData.smoking}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="never">Never</option>
                     <option value="occasionally">Occasionally</option>
@@ -541,7 +739,7 @@ const SignUpPage = () => {
                     name="drinking"
                     value={formData.drinking}
                     onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   >
                     <option value="never">Never</option>
                     <option value="occasionally">Occasionally</option>
@@ -557,7 +755,7 @@ const SignUpPage = () => {
                   name="interests"
                   value={formData.interests || ''}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="e.g. Hiking, Photography, Cooking"
                 />
               </div>
@@ -611,7 +809,7 @@ const SignUpPage = () => {
                       name="latitude"
                       value={formData.latitude}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                   <div>
@@ -622,7 +820,7 @@ const SignUpPage = () => {
                       name="longitude"
                       value={formData.longitude}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                 </div>
@@ -635,23 +833,78 @@ const SignUpPage = () => {
                 </button>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setProfilePhotoFile(file);
-                    setPhotoError('');
-                  }}
-                  className="mt-1 block w-full text-sm"
-                  required
-                />
-                {photoError && <p className="text-xs text-red-600 mt-1">{photoError}</p>}
-                {profilePhotoFile && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Selected: {profilePhotoFile.name} ({(profilePhotoFile.size/1024/1024).toFixed(2)} MB)
-                  </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Profile Pictures (Max 10)</label>
+                
+                <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rose-500 transition-colors cursor-pointer bg-white"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        handleFileSelect(Array.from(e.dataTransfer.files));
+                    }}
+                    onClick={() => document.getElementById('file-upload').click()}
+                >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => handleFileSelect(Array.from(e.target.files || []))}
+                      className="hidden"
+                    />
+                    <div className="text-gray-500">
+                        <p className="font-medium">Click to upload or drag and drop</p>
+                        <p className="text-xs mt-1">Animal photos only (JPG, PNG, WebP, GIF)</p>
+                        <p className="text-xs text-rose-500 mt-1">Strictly enforced: No humans allowed</p>
+                    </div>
+                </div>
+
+                {photoError && <p className="text-xs text-red-600 mt-2">{photoError}</p>}
+                
+                {/* Photo List */}
+                {profilePhotoFiles.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {profilePhotoFiles.map((file, idx) => (
+                            <div key={idx} className="relative group border rounded-lg p-2 bg-gray-50">
+                                <div className="aspect-square bg-gray-200 rounded mb-2 overflow-hidden">
+                                    <img 
+                                        src={URL.createObjectURL(file)} 
+                                        alt="preview" 
+                                        className="w-full h-full object-cover"
+                                        onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                                    />
+                                </div>
+                                <div className="text-xs truncate font-medium text-gray-700">{file.name}</div>
+                                
+                                {/* Status Indicator */}
+                                <div className="mt-1 text-xs font-medium">
+                                    {photoValidations[file.name]?.status === 'loading' && (
+                                        <span className="text-blue-600 flex items-center gap-1">
+                                            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                            Validating...
+                                        </span>
+                                    )}
+                                    {photoValidations[file.name]?.status === 'success' && (
+                                        <span className="text-green-600">✓ Valid</span>
+                                    )}
+                                    {photoValidations[file.name]?.status === 'error' && (
+                                        <span className="text-red-600">✕ {photoValidations[file.name]?.message}</span>
+                                    )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
+                                    className="absolute top-1 right-1 bg-red-500 rounded-full p-1.5 shadow-lg hover:bg-red-600 text-white transition-all transform hover:scale-110 z-10"
+                                    title="Remove photo"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 )}
               </div>
               <div className="bg-gray-50 p-4 rounded-lg space-y-4">
@@ -665,7 +918,7 @@ const SignUpPage = () => {
                       name="min_age"
                       value={formData.min_age}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                   <div>
@@ -676,7 +929,7 @@ const SignUpPage = () => {
                       name="max_age"
                       value={formData.max_age}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                   <div>
@@ -687,7 +940,7 @@ const SignUpPage = () => {
                       name="max_distance"
                       value={formData.max_distance}
                       onChange={handleChange}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-dark focus:border-rose-dark"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
                     />
                   </div>
                 </div>
@@ -722,7 +975,7 @@ const SignUpPage = () => {
                   value={formData.bio}
                   onChange={handleChange}
                   rows="3"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-rose-dark focus:border-rose-dark"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                   placeholder="I love dogs and hiking..."
                 ></textarea>
               </div>
@@ -741,10 +994,10 @@ const SignUpPage = () => {
             )}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
+              disabled={!!submitStatus}
+              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
             >
-              {loading ? 'Processing...' : (step === 4 ? 'Complete Sign Up' : 'Next')}
+              {submitStatus || (step === 4 ? 'Complete Sign Up' : 'Next')}
             </button>
           </div>
         </form>
@@ -762,29 +1015,4 @@ const SignUpPage = () => {
 
 export default SignUpPage;
 
-async function validateImage(file) {
-  const allowedTypes = ['image/jpeg', 'image/png'];
-  const maxSize = 5 * 1024 * 1024;
-  const minDim = 300;
-  const maxDim = 4000;
-  if (!allowedTypes.includes(file.type)) {
-    return { ok: false, message: 'Unsupported file type. Only JPG and PNG are allowed.' };
-  }
-  if (file.size > maxSize) {
-    return { ok: false, message: 'File too large. Max size is 5MB.' };
-  }
-  const dims = await new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ width: img.width, height: img.height });
-    img.onerror = () => resolve(null);
-    img.src = URL.createObjectURL(file);
-  });
-  if (!dims) return { ok: false, message: 'Invalid image file.' };
-  if (dims.width < minDim || dims.height < minDim) {
-    return { ok: false, message: `Image too small. Minimum dimensions are ${minDim}x${minDim}.` };
-  }
-  if (dims.width > maxDim || dims.height > maxDim) {
-    return { ok: false, message: `Image too large. Maximum dimensions are ${maxDim}x${maxDim}.` };
-  }
-  return { ok: true };
-}
+

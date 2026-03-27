@@ -1,0 +1,6 @@
+certbot/
+__pycache__/
+.env
+.venv
+venv/
+*.pyc

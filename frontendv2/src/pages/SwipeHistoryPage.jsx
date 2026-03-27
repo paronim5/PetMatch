@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Star, Calendar, X, Search, Filter } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Heart, Star, Search } from 'lucide-react';
 import { api } from '../services/api';
+import { useNotification } from '../context/useNotification';
 
 const SwipeHistoryPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const focusUserId = location.state?.focusUserId || null;
+  const { notifications } = useNotification();
   const [swipes, setSwipes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'like', 'super_like'
+  const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [highlightUserId, setHighlightUserId] = useState(null);
   
-  // Observer for infinite scroll
   const observer = useRef();
+  const focusElementRef = useRef(null);
   const lastElementRef = useCallback(node => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
@@ -25,18 +30,33 @@ const SwipeHistoryPage = () => {
     if (node) observer.current.observe(node);
   }, [loading, hasMore]);
 
-  // Reset when tab or search changes
   useEffect(() => {
     setSwipes([]);
     setPage(0);
     setHasMore(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, searchTerm]);
 
   useEffect(() => {
     fetchHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, activeTab, searchTerm]);
+
+  useEffect(() => {
+    setSwipes([]);
+    setPage(0);
+    setHasMore(true);
+  }, [notifications.length]);
+
+  useEffect(() => {
+    if (focusUserId) {
+      setHighlightUserId(focusUserId);
+    }
+  }, [focusUserId]);
+
+  useEffect(() => {
+    if (focusElementRef.current) {
+      focusElementRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [swipes, highlightUserId]);
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -88,38 +108,25 @@ const SwipeHistoryPage = () => {
     }
   };
 
-  const handleAction = async (swiperId, action) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-      await api.post('/matching/swipe', {
-        swiped_id: swiperId,
-        swipe_type: action
-      }, token);
-      
-      // Remove from list
-      setSwipes(prev => prev.filter(s => s.swiper.id !== swiperId));
-      
-      // Show feedback (optional toast)
-      // toast.success(`You ${action}d ${swiperId}`);
-    } catch (error) {
-      console.error(`Failed to ${action}`, error);
-      alert(`Failed to ${action}: ` + (error.response?.data?.detail || error.message));
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
     }
+    return url;
   };
 
   const getPartnerDetails = (swipe) => {
     const swiper = swipe.swiper;
     const profile = swiper.profile || {};
     const photos = swiper.photos || [];
-    const mainPhoto = photos.find(p => p.is_main)?.url || photos[0]?.url;
+    // Fix: Use photo_url instead of url, and sanitize it
+    const mainPhotoUrl = photos.find(p => p.is_main)?.photo_url || photos[0]?.photo_url;
     return {
       id: swiper.id,
       name: swiper.username, 
-      photo: mainPhoto,
+      photo: getPhotoUrl(mainPhotoUrl),
       age: profile.date_of_birth ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : '?',
     };
   };
@@ -149,13 +156,12 @@ const SwipeHistoryPage = () => {
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab('all')}
             className={`flex-1 pb-3 text-sm font-medium ${activeTab === 'all' ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
-            All Swipes
+            All Likes
           </button>
           <button
             onClick={() => setActiveTab('like')}
@@ -172,18 +178,18 @@ const SwipeHistoryPage = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
         {swipes.length === 0 && !loading ? (
           <div className="text-center py-10 text-gray-500">
             <Heart className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-            <p>No swipes found.</p>
+            <p>No likes yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {swipes.map((swipe, index) => {
               const partner = getPartnerDetails(swipe);
               const isSuperLike = swipe.swipe_type === 'super_like';
+              const isHighlighted = highlightUserId && partner.id === highlightUserId;
               
               // Last element ref for infinite scroll
               const isLast = index === swipes.length - 1;
@@ -191,8 +197,8 @@ const SwipeHistoryPage = () => {
               return (
                 <div 
                   key={swipe.id} 
-                  ref={isLast ? lastElementRef : null}
-                  className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex items-center"
+                  ref={isHighlighted ? focusElementRef : isLast ? lastElementRef : null}
+                  className={`bg-white p-3 rounded-lg shadow-sm border flex items-center ${isHighlighted ? 'border-rose-400 ring-2 ring-rose-200' : 'border-gray-100'}`}
                 >
                   <div className="relative">
                     {partner.photo ? (
@@ -218,21 +224,6 @@ const SwipeHistoryPage = () => {
                       <div className="text-xs text-gray-400">
                         {new Date(swipe.created_at).toLocaleDateString()}
                       </div>
-                    </div>
-                    
-                    <div className="flex gap-2 mt-2">
-                      <button 
-                        onClick={() => handleAction(partner.id, 'pass')}
-                        className="flex-1 py-1 px-3 border border-gray-300 rounded-full text-gray-600 text-sm hover:bg-gray-50 flex items-center justify-center gap-1"
-                      >
-                        <X className="w-4 h-4" /> Pass
-                      </button>
-                      <button 
-                        onClick={() => handleAction(partner.id, 'like')}
-                        className="flex-1 py-1 px-3 bg-rose-500 rounded-full text-white text-sm hover:bg-rose-600 flex items-center justify-center gap-1"
-                      >
-                        <Heart className="w-4 h-4" /> Like Back
-                      </button>
                     </div>
                   </div>
                 </div>

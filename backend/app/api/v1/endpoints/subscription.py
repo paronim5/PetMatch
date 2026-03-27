@@ -88,3 +88,22 @@ async def stripe_webhook(
          raise HTTPException(status_code=400, detail=str(e))
          
     return {"status": "success"}
+
+@router.get("/verify-session")
+def verify_session(
+    session_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: Any = Depends(deps.get_current_active_user)
+):
+    """
+    Manually verify a Stripe Checkout Session.
+    """
+    import stripe
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status == 'paid':
+            stripe_service.handle_checkout_session_completed(db, session)
+            return {"status": "success", "tier": session.metadata.get("tier")}
+        return {"status": "pending"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

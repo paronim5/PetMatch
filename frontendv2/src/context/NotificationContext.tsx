@@ -31,16 +31,27 @@ interface NotificationContextType {
   isConnected: boolean;
   refreshNotifications: () => void;
   addToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error', onClick?: () => void) => void;
+  isLoadingNotifications: boolean;
+  hasNewNotifications: boolean;
+  acknowledgeNewNotifications: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+type HistoryLocationState = {
+  focusUserId: number;
+};
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const ws = useRef<WebSocket | null>(null);
+  const pollTimeout = useRef<number | undefined>(undefined);
+  const failureCount = useRef(0);
   const navigate = useNavigate();
 
   const getToken = () => localStorage.getItem('token');
@@ -59,6 +70,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const token = getToken();
     if (!token) return;
     try {
+        setIsLoadingNotifications(true);
         const res = await fetch(`${API_URL}/notifications/`, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -69,6 +81,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
     } catch (e) {
         console.error(e);
+    } finally {
+        setIsLoadingNotifications(false);
     }
   };
 
@@ -120,7 +134,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       ws.current.onmessage = (event) => {
         try {
-          const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string } } };
+          const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string; related_user_id?: number | null } } };
           
           if (parsed.type === 'new_notification' && parsed.data?.notification) {
             const incoming = parsed.data.notification;
@@ -134,11 +148,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             };
             setNotifications(prev => [notif, ...prev]);
             setUnreadCount(prev => prev + 1);
+            setHasNewNotifications(true);
 
             // Show Toast
             let onClick: (() => void) | undefined;
             if (incoming.type === 'like' || incoming.type === 'super_like') {
-                onClick = () => navigate('/history');
+                const targetUserId = incoming.related_user_id;
+                onClick = () => {
+                  if (targetUserId) {
+                    navigate('/history', { state: { focusUserId: targetUserId } as HistoryLocationState });
+                  } else {
+                    navigate('/history');
+                  }
+                };
             } else if (incoming.type === 'match') {
                 onClick = () => navigate('/chat'); // Or /matching
             } else if (incoming.type === 'message') {
@@ -168,7 +190,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             ws.current.onclose = () => setIsConnected(false);
             ws.current.onmessage = (event) => {
               try {
-                const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string } } };
+                const parsed = JSON.parse(event.data) as { type: string; data?: { notification?: { id: number; is_read?: boolean; title?: string; message?: string; created_at?: string; type: string; related_user_id?: number | null } } };
                 if (parsed.type === 'new_notification' && parsed.data?.notification) {
                   const incoming = parsed.data.notification;
                   const notif: NotificationItem = {
@@ -181,10 +203,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                   };
                   setNotifications(prev => [notif, ...prev]);
                   setUnreadCount(prev => prev + 1);
+                  setHasNewNotifications(true);
                   
                   let onClick: (() => void) | undefined;
                   if (incoming.type === 'like' || incoming.type === 'super_like') {
-                      onClick = () => navigate('/history');
+                      const targetUserId = incoming.related_user_id;
+                      onClick = () => {
+                        if (targetUserId) {
+                          navigate('/history', { state: { focusUserId: targetUserId } as HistoryLocationState });
+                        } else {
+                          navigate('/history');
+                        }
+                      };
                   } else if (incoming.type === 'match') {
                       onClick = () => navigate('/chat');
                   } else if (incoming.type === 'message') {
@@ -209,6 +239,63 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     establishConnection();
+  }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    let active = true;
+
+    const scheduleNext = (ok: boolean) => {
+      if (!active) return;
+      if (ok) {
+        failureCount.current = 0;
+      } else {
+        failureCount.current = Math.min(failureCount.current + 1, 5);
+      }
+      const baseInterval = 30000;
+      const maxInterval = 300000;
+      const backoff = Math.min(baseInterval * Math.pow(2, failureCount.current), maxInterval);
+      const jitter = (Math.random() - 0.5) * 5000;
+      const delay = Math.max(5000, backoff + jitter);
+      pollTimeout.current = window.setTimeout(poll, delay);
+    };
+
+    const poll = async () => {
+      const tokenInner = getToken();
+      if (!tokenInner) return;
+      try {
+        const res = await fetch(`${API_URL}/notifications/unread?limit=10`, {
+          headers: { Authorization: `Bearer ${tokenInner}` },
+        });
+        if (!res.ok) {
+          scheduleNext(false);
+          return;
+        }
+        const data = await res.json() as { count: number };
+        setUnreadCount(prev => {
+          if (data.count > prev) {
+            setHasNewNotifications(true);
+            // Refresh full notification list so the dropdown shows new items,
+            // even if WebSocket is not connected.
+            fetchNotifications();
+          }
+          return data.count;
+        });
+        scheduleNext(true);
+      } catch {
+        scheduleNext(false);
+      }
+    };
+
+    poll();
+
+    return () => {
+      active = false;
+      if (pollTimeout.current !== undefined) {
+        window.clearTimeout(pollTimeout.current);
+      }
+    };
   }, []);
 
   const markAsRead = async (id: number) => {
@@ -236,9 +323,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           });
           setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
           setUnreadCount(0);
+          setHasNewNotifications(false);
       } catch (e) {
           console.error(e);
       }
+  };
+
+  const acknowledgeNewNotifications = () => {
+    setHasNewNotifications(false);
   };
 
   return (
@@ -249,7 +341,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       markAllAsRead,
       isConnected,
       refreshNotifications: fetchNotifications,
-      addToast
+      addToast,
+      isLoadingNotifications,
+      hasNewNotifications,
+      acknowledgeNewNotifications
     }}>
       {children}
       {/* Toast Container */}

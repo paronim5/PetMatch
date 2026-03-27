@@ -72,6 +72,16 @@ const ChatPage = () => {
     setShowReportModal(false);
   };
 
+  // Helper to sanitize photo URLs
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const staticIndex = url.indexOf('/static/');
+    if (staticIndex !== -1) {
+      return url.substring(staticIndex);
+    }
+    return url;
+  };
+
   const getPartnerDetails = (match) => {
     if (!match || !currentUserId) return { name: 'Unknown', photo: null };
     const partner = getPartnerUser(match);
@@ -84,7 +94,7 @@ const ChatPage = () => {
         };
     }
 
-    const photoUrl = partner.photos && partner.photos.length > 0 ? partner.photos[0].photo_url : null;
+    const photoUrl = partner.photos && partner.photos.length > 0 ? getPhotoUrl(partner.photos[0].photo_url) : null;
     return {
         name: partner.username || `Match #${match.id}`,
         photo: photoUrl,
@@ -312,7 +322,7 @@ const ChatPage = () => {
             <>
                 <div className="p-4 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between">
                     <div className="flex items-center">
-                        <button onClick={() => setSelectedMatch(null)} className="mr-3 md:hidden text-gray-500 hover:text-rose-500">
+                        <button onClick={() => setSelectedMatch(null)} className="mr-3 md:hidden text-gray-500 hover:text-rose-500 p-2 min-h-[48px] min-w-[48px] flex items-center justify-center">
                             <FaArrowLeft size={20} />
                         </button>
                         {(() => {

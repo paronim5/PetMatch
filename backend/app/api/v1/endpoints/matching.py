@@ -9,6 +9,9 @@ from app.domain.models import Swipe as SwipeModel, Match, User as UserModel, Use
 from datetime import datetime
 from app.domain.enums import SwipeType
 from app.services.notification_service import notification_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -56,7 +59,12 @@ def get_matching_candidates(
     """
     Get matching candidates for the current user.
     """
-    return matching_service.get_matches(db, user=current_user, limit=limit)
+    try:
+        return matching_service.get_matches(db, user=current_user, limit=limit)
+    except Exception as e:
+        logger.error(f"Error fetching candidates for user {current_user.id}: {e}", exc_info=True)
+        # Include error detail in response for debugging purposes
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: Failed to fetch candidates. {str(e)}")
 
 @router.get("/likers", response_model=List[User])
 def get_likers(
@@ -114,7 +122,7 @@ def create_swipe(
         swipe = SwipeModel(
             swiper_id=current_user.id,
             swiped_id=swipe_in.swiped_id,
-            swipe_type=swipe_in.swipe_type,
+            swipe_type=swipe_in.swipe_type.value,
             created_at=datetime.utcnow()
         )
         db.add(swipe)
@@ -143,10 +151,11 @@ def create_swipe(
                         message=msg_body,
                         related_user_id=current_user.id
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to send like/super_like notification: {e}", exc_info=True)
 
             # Check if the other user already liked current user -> create match
+
             other_swipe = db.query(SwipeModel).filter(
                 SwipeModel.swiper_id == swipe_in.swiped_id,
                 SwipeModel.swiped_id == current_user.id,
@@ -198,14 +207,18 @@ def create_swipe(
                                     related_user_id=current_user.id,
                                     related_match_id=match.id
                                 )
-                        except Exception:
-                            pass
-                    except Exception:
-                        pass
+                        except Exception as e:
+                            logger.error(f"Failed to notify other user {swipe_in.swiped_id} of match: {e}", exc_info=True)
+                            
+                    except Exception as e:
+                        logger.error(f"Failed to process match notifications: {e}", exc_info=True)
+
 
         return swipe
     except HTTPException:
         raise
     except Exception as e:
         print(f"Swipe Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to record swipe")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to record swipe: {type(e).__name__}: {str(e)}")
