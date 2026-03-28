@@ -1,6 +1,10 @@
 # Build stage
 FROM node:18-alpine as build
 WORKDIR /app
+
+# Cap Node.js heap to 400 MB so the build doesn't OOM on t3.micro
+ENV NODE_OPTIONS="--max-old-space-size=400"
+
 COPY package*.json ./
 
 # FIX: Added legacy flag to bypass React 19 peer dependency conflicts
