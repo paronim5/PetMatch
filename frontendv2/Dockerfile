@@ -1,9 +1,9 @@
-# Build stage
-FROM node:18-alpine as build
+# Build stage — Node 20 required by Vite 7
+FROM node:20-alpine as build
 WORKDIR /app
 
-# Cap Node.js heap to 400 MB so the build doesn't OOM on t3.micro
-ENV NODE_OPTIONS="--max-old-space-size=400"
+# Allow up to 1 GB heap; swap covers any overflow on t3.micro
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 COPY package*.json ./
 
