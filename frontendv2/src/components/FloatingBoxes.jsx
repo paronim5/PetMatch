@@ -93,9 +93,12 @@ const FloatingBoxes = ({ scrollProgress, isMobile }) => {
     return () => timers.current.forEach(clearTimeout);
   }, []);
 
-  // Fade out as user scrolls past box zone
+  // Fade out when scrolled back up near the top, or when past the box zone
   const globalOpacity = useMemo(() => {
     if (phase === 'idle') return 0;
+    if (scrollProgress < 0.08) {
+      return Math.max(0, scrollProgress / 0.08);
+    }
     if (scrollProgress > 0.62) {
       return Math.max(0, 1 - (scrollProgress - 0.62) / 0.13);
     }

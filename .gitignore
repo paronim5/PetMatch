@@ -1,6 +1,7 @@
 certbot/
 __pycache__/
 .env
+!frontendv2/.env
 .venv
 venv/
 *.pyc
