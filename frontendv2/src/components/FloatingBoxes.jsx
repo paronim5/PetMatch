@@ -42,10 +42,10 @@ const BOXES = [
 
 // Desktop: 2x2 grid around center
 const DESKTOP_FINAL = [
-  { left: 24, top: 28 },  // top-left
-  { left: 76, top: 28 },  // top-right
-  { left: 24, top: 72 },  // bottom-left
-  { left: 76, top: 72 },  // bottom-right
+  { left: 22, top: 28 },  // top-left
+  { left: 78, top: 28 },  // top-right
+  { left: 22, top: 72 },  // bottom-left
+  { left: 78, top: 72 },  // bottom-right
 ];
 
 // Mobile: vertical stack in center
@@ -56,15 +56,13 @@ const MOBILE_FINAL = [
   { left: 50, top: 82 },
 ];
 
-// Each box comes from its nearest off-screen corner edge
 const DESKTOP_EDGE = [
-  { left: -22, top: -18 },   // top-left (off screen)
-  { left: 122, top: -18 },   // top-right (off screen)
-  { left: -22, top: 118 },   // bottom-left (off screen)
-  { left: 122, top: 118 },   // bottom-right (off screen)
+  { left: -22, top: -18 },
+  { left: 122, top: -18 },
+  { left: -22, top: 118 },
+  { left: 122, top: 118 },
 ];
 
-// Mobile: alternate left/right edges
 const MOBILE_EDGE = [
   { left: -80, top: 16 },
   { left: 180, top: 38 },
@@ -74,10 +72,10 @@ const MOBILE_EDGE = [
 
 const FloatingBoxes = ({ scrollProgress, isMobile }) => {
   const navigate = useNavigate();
-  // 'idle' → 'edge' → 'final'
   const [phase, setPhase] = useState('idle');
   const triggered = useRef(false);
   const timers = useRef([]);
+  const prevScrollRef = useRef(0);
 
   useEffect(() => {
     if (scrollProgress > 0.17 && !triggered.current) {
@@ -88,22 +86,35 @@ const FloatingBoxes = ({ scrollProgress, isMobile }) => {
     }
   }, [scrollProgress]);
 
-  // Clean up timers only on unmount
   useEffect(() => {
     return () => timers.current.forEach(clearTimeout);
   }, []);
 
-  // Fade out when scrolled back up near the top, or when past the box zone
   const globalOpacity = useMemo(() => {
     if (phase === 'idle') return 0;
-    if (scrollProgress < 0.08) {
-      return Math.max(0, scrollProgress / 0.08);
+
+    const goingUp = scrollProgress < prevScrollRef.current;
+
+    // Scrolling UP: fade out early so boxes don't overlap sections below the hero
+    if (goingUp && scrollProgress < 0.45) {
+      return Math.max(0, (scrollProgress - 0.08) / 0.37);
     }
+
+    // Near top: always hidden
+    if (scrollProgress < 0.08) return 0;
+
+    // Fade out when scrolling DOWN past the box zone
     if (scrollProgress > 0.62) {
       return Math.max(0, 1 - (scrollProgress - 0.62) / 0.13);
     }
+
     return 1;
   }, [scrollProgress, phase]);
+
+  // Update previous scroll ref AFTER render so useMemo above reads the previous value
+  useEffect(() => {
+    prevScrollRef.current = scrollProgress;
+  }, [scrollProgress]);
 
   const edgePositions = isMobile ? MOBILE_EDGE : DESKTOP_EDGE;
   const finalPositions = isMobile ? MOBILE_FINAL : DESKTOP_FINAL;
@@ -116,7 +127,7 @@ const FloatingBoxes = ({ scrollProgress, isMobile }) => {
   const getTransition = (i) => {
     if (phase === 'final') {
       const delay = i * 0.09;
-      return `left 0.9s ${delay}s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.9s ${delay}s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease`;
+      return `left 0.9s ${delay}s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.9s ${delay}s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease`;
     }
     return 'none';
   };
@@ -136,19 +147,19 @@ const FloatingBoxes = ({ scrollProgress, isMobile }) => {
               top: `${pos.top}%`,
               transform: 'translate(-50%, -50%)',
               opacity: phase === 'idle' ? 0 : globalOpacity,
-              width: isMobile ? '82%' : '240px',
-              maxWidth: isMobile ? '360px' : 'none',
+              width: isMobile ? '88%' : '300px',
+              maxWidth: isMobile ? '380px' : 'none',
               transition: getTransition(i),
               zIndex: 50,
               pointerEvents: isInteractive ? 'auto' : 'none',
               willChange: 'left, top',
             }}
             onClick={() => isInteractive && navigate(box.path)}
-            className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-3xl p-6 cursor-pointer shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200`}
+            className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-3xl p-7 cursor-pointer shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-3xl">{box.icon}</span>
-              <h3 className={`text-lg font-black ${box.titleColor}`}>{box.title}</h3>
+              <span className="text-4xl">{box.icon}</span>
+              <h3 className={`text-xl font-black ${box.titleColor}`}>{box.title}</h3>
             </div>
             <p className="text-white/55 text-sm leading-relaxed">{box.desc}</p>
             <div className={`mt-4 flex items-center gap-1.5 text-xs font-bold ${box.titleColor}`}>
