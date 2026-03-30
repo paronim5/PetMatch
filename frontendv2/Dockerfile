@@ -7,6 +7,11 @@ ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 COPY package*.json ./
 
+# Configure npm retries for flaky network (common on t3.micro)
+RUN npm config set fetch-retries 5 \
+ && npm config set fetch-retry-mintimeout 20000 \
+ && npm config set fetch-retry-maxtimeout 120000
+
 # FIX: Added legacy flag to bypass React 19 peer dependency conflicts
 RUN npm ci --legacy-peer-deps
 
