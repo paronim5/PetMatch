@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { authService } from '../services/auth';
 import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
@@ -54,21 +54,13 @@ const SignUpPage = () => {
 
   const handleAddressSelect = (option) => {
     setAddress(option);
-    if (option && window.google) {
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ placeId: option.value.place_id }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          const lat = results[0].geometry.location.lat();
-          const lng = results[0].geometry.location.lng();
-          const cityComponent = results[0].address_components.find(c => c.types.includes('locality'));
-          setFormData(prev => ({
-            ...prev,
-            location_city: cityComponent ? cityComponent.long_name : option.label,
-            latitude: lat,
-            longitude: lng,
-          }));
-        }
-      });
+    if (option) {
+      setFormData(prev => ({
+        ...prev,
+        location_city: option.value.city || option.label,
+        latitude: option.value.lat,
+        longitude: option.value.lon,
+      }));
     }
   };
 
@@ -413,18 +405,11 @@ const SignUpPage = () => {
                   <div>
                     <label className={labelClass}>Location</label>
                     <div className="rounded-2xl overflow-hidden shadow-sm">
-                      <GooglePlacesAutocomplete
-                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                      <LocationAutocomplete
                         selectProps={{
                           value: address,
                           onChange: handleAddressSelect,
                           placeholder: 'Search for your city...',
-                          styles: {
-                            control: (base) => ({ ...base, padding: '6px', borderRadius: '16px', border: 'none', backgroundColor: '#f9fafb', boxShadow: 'none' }),
-                            input: (base) => ({ ...base, color: '#374151' }),
-                            placeholder: (base) => ({ ...base, color: '#9ca3af' }),
-                            option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#fff1f2' : 'white', color: '#374151' }),
-                          },
                         }}
                       />
                     </div>

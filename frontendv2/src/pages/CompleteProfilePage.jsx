@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../context/useNotification';
-import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { api } from '../services/api';
 import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
@@ -132,16 +132,8 @@ const CompleteProfilePage = () => {
 
   const handleAddressSelect = (option) => {
     setAddress(option);
-    if (option && window.google) {
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ placeId: option.value.place_id }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          const lat = results[0].geometry.location.lat();
-          const lng = results[0].geometry.location.lng();
-          const cityComponent = results[0].address_components.find(c => c.types.includes('locality'));
-          setFormData(prev => ({ ...prev, location_city: cityComponent ? cityComponent.long_name : option.label, latitude: lat, longitude: lng }));
-        }
-      });
+    if (option) {
+      setFormData(prev => ({ ...prev, location_city: option.value.city || option.label, latitude: option.value.lat, longitude: option.value.lon }));
     }
   };
 
@@ -466,36 +458,12 @@ const CompleteProfilePage = () => {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Location</label>
                     <div className="shadow-sm rounded-2xl overflow-hidden border-0">
-                      <GooglePlacesAutocomplete 
-                        apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                        selectProps={{ 
-                          value: address, 
-                          onChange: handleAddressSelect, 
-                          classNamePrefix: "react-select",
+                      <LocationAutocomplete
+                        selectProps={{
+                          value: address,
+                          onChange: handleAddressSelect,
                           placeholder: "Search for your city...",
-                          styles: {
-                            control: (base) => ({
-                              ...base,
-                              padding: '8px',
-                              borderRadius: '16px',
-                              border: 'none',
-                              backgroundColor: '#f9fafb',
-                              boxShadow: 'none',
-                              '&:hover': {
-                                backgroundColor: '#fff',
-                                ring: '2px solid #f43f5e'
-                              }
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              color: '#374151'
-                            }),
-                            placeholder: (base) => ({
-                              ...base,
-                              color: '#9ca3af'
-                            })
-                          }
-                        }} 
+                        }}
                       />
                     </div>
                   </div>
