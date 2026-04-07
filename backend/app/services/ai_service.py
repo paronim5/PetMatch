@@ -4,7 +4,6 @@ import os
 import json
 import numpy as np
 import onnxruntime as ort
-from functools import lru_cache
 from PIL import Image
 import logging
 import cv2
@@ -96,7 +95,6 @@ class AIService:
             logger.error(f"Error preparing image: {e}")
             raise ValueError("Invalid image format")
 
-    @lru_cache(maxsize=32)
     def _predict_internal(self, image_bytes: bytes) -> dict:
         session = self._get_session()
         if session is None:

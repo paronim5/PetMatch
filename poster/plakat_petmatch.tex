@@ -1,0 +1,234 @@
+% !TeX program = lualatex
+\documentclass[final]{beamer}
+
+% A0, portrét
+\usepackage[size=a0,orientation=portrait,scale=1.3]{beamerposter}
+
+% Jazyk a fonty
+\usepackage[czech]{babel}
+\usepackage{fontspec}
+\setsansfont{TeX Gyre Adventor}
+
+% Typografie a grafika
+\usepackage[final,protrusion=false,expansion=true,nopatch]{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{qrcode}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\linespread{1.15}
+
+% Okraje pro poster
+\usepackage[margin=2.5cm]{geometry}
+
+% Multicol
+\usepackage{multicol}
+\setlength{\columnsep}{2.5cm}
+
+% Barvy
+\definecolor{jecnaBlue}{HTML}{1459A6}
+\definecolor{accentOrange}{HTML}{E87722}
+\definecolor{lightGray}{HTML}{F5F5F5}
+\definecolor{darkGray}{HTML}{333333}
+
+% Beamer barvy
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamerfont{normal text}{size=\normalsize}
+
+% Nadpis sekce
+\newcommand{\Heading}[1]{%
+  \vspace{1em}%
+  {\color{jecnaBlue}\bfseries\fontsize{56}{70}\selectfont #1}\par
+  \noindent\textcolor{accentOrange}{\rule{\linewidth}{3pt}}\par
+  \vspace{0.5em}%
+}
+
+% Barevný box pro abstrakt
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+\newtcolorbox{abstractbox}{
+  colback=lightGray,
+  colframe=jecnaBlue,
+  boxrule=3pt,
+  arc=8pt,
+  left=1.5em,
+  right=1.5em,
+  top=1em,
+  bottom=1em
+}
+
+% pojistky
+\raggedright
+\sloppy
+\emergencystretch=3em
+
+\begin{document}
+
+\begin{frame}[t]
+
+% ===== HLAVIČKA =====
+\vspace{0.5em}
+
+% QR kódy + název ve třech sloupcích
+\begin{minipage}[c]{0.18\linewidth}
+  \centering
+  \qrcode[height=7cm]{https://github.com/paronim5/PetMatch}\par
+  \vspace{0.4em}
+  {\fontsize{28}{34}\selectfont\color{darkGray} GitHub repozitář}
+\end{minipage}%
+\hfill%
+\begin{minipage}[c]{0.60\linewidth}
+  \centering
+  {\color{jecnaBlue}\bfseries\fontsize{90}{110}\selectfont PetMatch}\par
+  \vspace{0.4em}
+  {\color{darkGray}\fontsize{44}{56}\selectfont Webová aplikace pro párování majitelů domácích zvířat}\par
+  \vspace{0.8em}
+  \textcolor{jecnaBlue}{\rule{\linewidth}{4pt}}\par
+  \vspace{0.6em}
+  {\fontsize{46}{56}\selectfont\bfseries Pavlo Kosov}\par
+  \vspace{0.3em}
+  {\fontsize{36}{46}\selectfont\color{darkGray} Webové technologie \textbullet\ Umělá inteligence \textbullet\ Cloudové systémy}\par
+  \vspace{0.3em}
+  {\fontsize{32}{40}\selectfont\color{darkGray} SPŠE Ječná, Praha \textbullet\ Školní rok 2024/2025}\par
+\end{minipage}%
+\hfill%
+\begin{minipage}[c]{0.18\linewidth}
+  \centering
+  \qrcode[height=7cm]{https://paroniim.xyz}\par
+  \vspace{0.4em}
+  {\fontsize{28}{34}\selectfont\color{darkGray} Živá aplikace}
+\end{minipage}
+
+\vspace{1em}
+
+% ===== ABSTRAKT =====
+\begin{abstractbox}
+  {\color{jecnaBlue}\bfseries\fontsize{40}{50}\selectfont Abstrakt}\par
+  \vspace{0.5em}
+  {\fontsize{34}{44}\selectfont
+  PetMatch je plnohodnotná webová aplikace fungující na principu swipování – uživatel si vytvoří profil, nahraje fotografie svého mazlíčka a prochází profily ostatních uživatelů. Vzájemný like otevře real-time chat. Systém zahrnuje AI validaci fotografií (MobileNetV2), geolokační párování (PostGIS), platební bránu Stripe, Google OAuth 2.0 a push notifikace přes Firebase. Backend je postaven na FastAPI (Python), frontend na React 19 s TypeScriptem. Aplikace je nasazena na AWS EC2 a dostupná na \textbf{paroniim.xyz}.
+
+  \vspace{0.5em}
+  \textbf{Klíčová slova:} webová aplikace, párování, FastAPI, React, PostgreSQL, Docker, AWS, WebSocket, Stripe, OAuth, umělá inteligence
+  }
+\end{abstractbox}
+
+\vspace{1.2em}
+\noindent\rule{\linewidth}{2pt}
+\vspace{0.5em}
+
+% ===== DVA SLOUPCE =====
+\begin{multicols}{2}
+
+\Heading{Motivace a cíle}
+
+{\fontsize{32}{42}\selectfont
+Přestože existují desítky aplikací pro setkávání lidí, majitelé domácích zvířat hledají pro svého mazlíčka kamaráda na procházky nebo vhodného partnera pro chov jen velmi těžko. Tuto mezeru na trhu zaplňuje PetMatch – první česká platforma podporující \textbf{všechna} domácí zvířata: psy, kočky, hlodavce, ptáky, ryby i plazy.
+
+Cílem bylo vytvořit funkční, nasazenou aplikaci s moderním UX, která demonstruje znalosti webových technologií, cloudového nasazení a integrace externích služeb.
+}
+
+\Heading{Hlavní funkce}
+
+{\fontsize{32}{42}\selectfont
+\begin{itemize}
+  \item \textbf{Registrace} – e-mail nebo Google OAuth 2.0
+  \item \textbf{Swipe párování} – filtrace dle vzdálenosti a preferencí
+  \item \textbf{Real-time chat} – WebSocket s emoji reakcemi a potvrzením přečtení
+  \item \textbf{AI validace fotek} – odmítnutí nevhodného obsahu a nezvířecích fotek
+  \item \textbf{Předplatné} – Free / Premium / Premium Plus přes Stripe
+  \item \textbf{Push notifikace} – Firebase Cloud Messaging (FCM)
+  \item \textbf{Bezpečnost} – blokování a nahlašování uživatelů
+\end{itemize}
+}
+
+\Heading{Architektura systému}
+
+{\fontsize{32}{42}\selectfont
+Aplikace je navržena jako \textbf{SPA} (Single-Page Application) s odděleným frontendem a backendem komunikujícím přes REST API a WebSocket. Celá infrastruktura běží v \textbf{Docker Compose} kontejnerech za Nginx reverzní proxy s Let's Encrypt TLS certifikátem.
+}
+
+\vspace{0.8em}
+{\fontsize{30}{40}\selectfont
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\textbf{Vrstva} & \textbf{Technologie} \\
+\midrule
+Backend & Python 3.11, FastAPI, SQLAlchemy \\
+Databáze & PostgreSQL + PostGIS (geolokace) \\
+Frontend & React 19, TypeScript, Vite, Tailwind CSS \\
+AI modul & ONNX Runtime, MobileNetV2, OpenCV \\
+Infrastruktura & Docker Compose, Nginx, AWS EC2 \\
+Externí služby & Stripe, Google OAuth 2.0, Firebase FCM \\
+\bottomrule
+\end{tabularx}
+}
+
+\Heading{AI validace fotografií}
+
+{\fontsize{32}{42}\selectfont
+Klíčovým bezpečnostním prvkem je modul AI validace, který se spustí při každém nahrání fotografie. Systém provede dva testy:
+
+\begin{enumerate}
+  \item \textbf{Detekce zvířete} – model MobileNetV2 (1000 tříd ImageNet) zkontroluje, zda fotografie obsahuje zvíře. Pokud nikoli, nahrání je zamítnuto.
+  \item \textbf{Detekce obličeje} – OpenCV Haar kaskáda zajistí, že fotka neobsahuje lidský obličej (ochrana soukromí).
+\end{enumerate}
+
+Model běží lokálně přes \textbf{ONNX Runtime} bez závislosti na cloudových API – rychle a bez dalších nákladů.
+}
+
+\Heading{Platební systém}
+
+{\fontsize{32}{42}\selectfont
+Aplikace nabízí tři úrovně přístupu integrované přes \textbf{Stripe Checkout}:
+
+\begin{itemize}
+  \item \textbf{Free} – základní swipování, omezený počet liků denně
+  \item \textbf{Premium} – neomezené liky, zobrazení kdo vás lajkoval, prioritní zobrazení
+  \item \textbf{Premium Plus} – vše z Premium + rozšířené filtry a boost profilu
+\end{itemize}
+
+Stripe webhook zpracovává platební události a automaticky aktualizuje předplatné v databázi.
+}
+
+\Heading{Testování a nasazení}
+
+{\fontsize{32}{42}\selectfont
+Aplikace prošla ručním i automatizovaným testováním: unit testy backendu (pytest), end-to-end scénáře pro registraci, párování a platby. Produkční nasazení probíhá na \textbf{AWS EC2 t3.micro} s automatickou obnovou TLS certifikátu přes Certbot.
+
+Živá aplikace je dostupná na adrese \textbf{https://paroniim.xyz}.
+}
+
+\Heading{Výsledky a přínos}
+
+{\fontsize{32}{42}\selectfont
+Výsledkem práce je funkční, nasazená webová aplikace demonstrující komplexní znalosti:
+\begin{itemize}
+  \item Návrh a implementace REST API a WebSocket serveru
+  \item Integrace AI modelu do webové aplikace
+  \item Platební brána a správa předplatného
+  \item Kontejnerizace a cloudové nasazení
+  \item Moderní frontend s 3D prvky (Three.js) a animacemi
+\end{itemize}
+
+PetMatch vyplňuje reálnou mezeru na trhu a je připraven k rozšíření o mobilní aplikaci.
+}
+
+\end{multicols}
+
+% ===== PATIČKA =====
+\vfill
+\noindent\rule{\linewidth}{2pt}
+\vspace{0.5em}
+\begin{center}
+  {\fontsize{30}{38}\selectfont
+  \textbf{Datum:} duben 2025
+  \quad\textbullet\quad © Pavlo Kosov, SPŠE Ječná \the\year
+  }
+\end{center}
+
+\end{frame}
+
+\end{document}

@@ -1,0 +1,59 @@
+Grading criteria
+Technické parametry pro tisk
+
+    Formát: A0 (841 x 1189 mm)
+    Pozadí: Čistě bílé (povinné)
+
+Nedodržení = plakát nebude vytištěn.
+Maximum score1
+Povinné identifikační údaje
+
+V horní třetině plakátu musí být:
+
+    Název projektu (nahoře uprostřed)
+    Jméno a příjmení (pod názvem)
+    Oblast projektu (např. Automatizace, Měření...)
+    Klíčové údaje z abstraktu (stručné shrnutí)
+
+Maximum score1
+Jazyková a obsahová integrita
+
+    Celý plakát pouze v češtině nebo angličtině (nekombinovat).
+    Obsah musí být v souladu se školním řádem a zákony ČR.
+
+Maximum score1
+
+
+
+
+
+
+Každý žák musí ke svému projektu odevzdat prostřednictvím systému Moodle do konce března ke každému projektu propagační nebo popisný plakát, či vědecký poster formátu A0, který škola žákům tiskne, dodrží-li následující tiskové pokyny:
+
+    Formát: A0 - 841 x 1189 mm
+    Rozlišení: 300 DPI
+    Barva pozadí: bíla
+    Nezávadný obsah dle zákonů ČR a školního řádu.
+    Celý plakát musí být v jednom jazyce a to českém nebo anglickém.
+    Volitelně můžete dát na konec plakátu shrnutí v druhém jazyce.
+
+Povinně musí plakát obsahovat v horní třetině:
+
+    Název - umístění nahoře uprostřed.
+    Jméno a příjmení žáka - umístění uprostřed pod názvem uprostřed.
+    Oblast, kam lze projekt zařadit - umístění pod jménem žáka
+    (například: Automatizace, Měření, Neuronové sítě - žák volí oblast sám, může být více)
+    Abstrakt - umístění v horní třetině plakátu
+
+Volitelně doporučujeme aby plakát obsahoval:
+
+    Obrázek nebo schéma které shrnuje celé dílo
+    QR odkazující na repozitář nebo web projektu
+    Datum vytvoření
+
+V případě nedodržení pokynů škola plakát nevytiskne. Plakáty opožděné škola tiskne jen ve výjimečných případech s rozumným odůvodněním, stejně jako opravné tisky. Výtisky plakátů se vydávají v den veletrhu. 
+
+
+
+
+

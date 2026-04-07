@@ -1,0 +1,123 @@
+% !TeX program = lualatex
+\documentclass[final]{beamer}
+
+% A1, portrét, větší písmo
+\usepackage[size=a0,orientation=portrait,scale=1.3]{beamerposter}
+
+% Jazyk a fonty
+\usepackage[czech]{babel}
+\usepackage{fontspec}
+\setsansfont{TeX Gyre Adventor}
+
+% Typografie a grafika
+\usepackage[final,protrusion=false,expansion=true,nopatch]{microtype}
+\usepackage{graphicx}
+%\graphicspath{{./}{./img/}}
+\usepackage{xcolor}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\linespread{1.15}
+%\everypar{\noindent}
+%\useshorthands*{}
+%\defineshorthand{" }{\ }
+% Okraje pro poster
+\usepackage[margin=2cm]{geometry}
+
+% Multicol
+\usepackage{multicol}
+\setlength{\columnsep}{2cm}
+
+
+% Barvy
+\definecolor{jecnaBlue}{HTML}{1459A6}
+
+% Beamer barvy a fonty (volitelně)
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamerfont{normal text}{size=\normalsize}
+
+% --- Viditelný NADPIS (náhrada za \section*) ---
+\newcommand{\Heading}[1]{%
+  \vspace{1em}%
+  {\color{jecnaBlue}\bfseries\fontsize{56}{70}\selectfont #1}\par
+  \vspace{0.8em}%
+}
+
+% Sloupce: mezera 1 cm, správný výpočet šířky
+\newlength{\sepwidth}  %deklarace prom.
+\newlength{\colwidth}
+
+\setlength{\sepwidth}{1.5cm}
+\setlength{\colwidth}{\dimexpr .5\paperwidth - \sepwidth\relax}
+
+% pojistky proti přetečení
+\raggedright
+\sloppy
+\emergencystretch=3em
+
+% Jednoduché makro pro obrázky s popisky
+\newcommand{\PosterImage}[2][\linewidth]{%
+  \begin{flushleft}
+    \includegraphics[width=#1]{#2}\\[-0.3em]
+  %  {\small\bfseries #3}
+  \end{flushleft}
+}
+
+\begin{document}
+
+% poslední záchrana: extra pružnost mezer v problematických odstavcích
+\begin{frame}[t]
+
+  \vspace{1em}%
+  {\color{jecnaBlue}\bfseries\fontsize{70}{100}\selectfont Technologické inovace na vzestupu: reportáž o průkopnických projektech na SPŠE Ječná v Praze}\par
+  \vspace{0.8em}%
+
+{\big\bfseries\noindent
+Na prvním oficiálním veletrhu žákovských maturitních prací, který se uskutečnil 23. dubna 2024 na Střední průmyslové škole elektrotechnické Ječná v Praze, se představilo více než 50 firemních zástupců a navštívilo jej přes 200 návštěvníků z řad veřejnosti. Letos, kdy se akce konala 22. dubna, toto číslo ještě vzrostlo. Podle školního koordinátora pro spolupráci s průmyslem, ing. Masopusta, překonal počet zástupců firem číslo 70. Návštěvníků veletrhu z řad veřejnosti pak bylo přes 250. Cílem veletrhu je umožnit každému ze 130 prezentujících maturantů představit svou praktickou maturitní práci. Pro žáky 4. ročníků to tak stejně jako minulý rok byla příležitost reálně se prezentovat na trhu práce. Firmy, které již obdržely jejich životopisy, mohly na veletrhu osobně poznat předem vybrané studenty a vyslechnout si jejich prezentace maturitních projektů. A dorazila dokonce i televize.
+Jelikož rozhodně nelze uvést úplně všechny, zmíním alespoň několik ambiciózních projektů, které ukazují, kam až může sahat kreativita a technická zručnost vývojářů a samozřejmě také to, že svět technologií se neustále vyvíjí a každým dnem vznikají nové inovace, které mění naše vnímání možností moderního inženýrství.}
+\noindent\rule{\linewidth}{2pt}
+% ===== DVA SLOUPCE =====
+\begin{multicols}{2}
+
+\Heading{MiniTHOR — autonomní robot bez GPS}
+\PosterImage[0.6\linewidth]{fotky/minithor.jpg}
+
+Jedním z fascinujících projektů je MiniTHOR od Flaviana Nzambiho, autonomní mobilní robot, jehož hlavním cílem je navigace bez využití GPS. Systém je založen na inerciální a vizuální lokalizaci, přičemž využívá hloubkovou kameru a 2D LiDAR, zpracovávané pomocí výkonné platformy NVIDIA Jetson Orin a softwarového prostředí ROS 2. Projekt nejenže staví na sofistikované softwarové fúzi dat pomocí Kalmanova filtru, ale klade důraz i na plánování trasy, což umožňuje základní autonomní pohyb robota v neznámém prostředí.
+
+\Heading{EnergyPal — chytré využití přebytků z FVE}
+\PosterImage[0.6\linewidth]{fotky/energy.jpg}
+
+V době rostoucího zájmu o ekologická řešení a úspory energie je projekt EnergyPal Filipa Havlíka příkladným krokem vpřed. Toto automatizované zařízení optimalizuje využití přebytků fotovoltaické energie, kterou směřuje na ohřev užitkové vody v topné soustavě kombinující elektrické a plynové topné těleso. Inteligentní monitoring teplot a stavů zařízení umožňuje maximální využití energie, minimalizaci spotřeby plynu a sledování dat prostřednictvím webového rozhraní.
+
+\Heading{SimplyStocks — analýza trhů}
+\PosterImage[0.6\linewidth]{fotky/stock.jpg}
+
+Pro investory do akcií přináší webová aplikace SimplyStocks od Matěje Bošky sofistikované sledování finančních trhů. Díky pokročilému predikčnímu algoritmu založeném na strojovém učení aplikace nejen zobrazuje aktuální ceny a historická data, ale umožňuje i analyzovat trendy a sentiment trhu. S využitím Flask frameworku, finance a Prophet získávají uživatelé komplexní API pro analýzu dat, což jim pomáhá činit informovaná investiční rozhodnutí.
+
+
+\Heading{BeeSafe — ochrana včelích úlů}
+\PosterImage[0.6\linewidth]{fotky/vcely.jpg}
+Moderní technologie zasahují i do tradičních oblastí, například včelařství. Systém BeeSafe od Matěje Šacha monitoruje včelí úly, dokáže odhalit neoprávněnou manipulaci s nimi a včelaři okamžitě odešle SMS s polohou úlu přes GSM GPS modul. Dalším klíčovým prvkem je akustický senzor, který sleduje frekvenci zvuku uvnitř úlu a detekuje tzv. rojovou náladu včelstva. Díky solárním panelům systém funguje bez přívodu elektrické energie.
+
+\Heading{Gaussova puška \& směrový zvuk}
+\PosterImage[0.6\linewidth]{fotky/gauss.jpg}
+
+V neposlední řadě stojí demonstrátor Gaussovy pušky, zařízení využívající magnetické pole cívky k urychlení projektilu bez exploze. Tento experimentální systém od autora Vojtěcha Budila byl navržen pro studijní účely, aby demonstroval sílu magnetického pole a jeho účinek na feromagnetické materiály. Projektem na podobné téma se zabýval i Michal Dvořák, spolužák již zmíněného Budila, oba dva spolu dokonce vzájemně řešili různé výzvy, které jim jejich projekty dennodenně přinášely. Dlužno dodat, že Dvořákovým projektem bylo sestrojení generátoru slyšitelného zvuku vysíláním modulovaných ultrazvukových akustických vln, který funguje jako směrový reproduktor. Oba dva svůj projekt úspěšně prezentovali i v rámci Středoškolské odborné činnosti (SOČ).
+
+\Heading{Závěr}
+
+Každý z těchto projektů ukazuje, že technologické inovace neustále posouvají hranice možného. Autonomní roboti, chytré energetické systémy, sofistikovaná analýza akciových trhů a pokrok v oblasti fyzikálních experimentů dokazují, že budoucnost patří těm, kteří se nebojí inovovat. A takových žáků je na SPŠE Ječná celá řada.
+
+\vspace{2.2cm}
+\hfill \Large\bfseries Martin Janečka
+
+\end{multicols}
+
+% Patička
+\vfill
+\begin{center}
+  \small © SPŠE Ječná \the\year
+\end{center}
+
+\end{frame}
+
+\end{document}

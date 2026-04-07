@@ -40,6 +40,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     volumes:
       - petmatch_uploads:/app/static/uploads
     env_file:
@@ -60,7 +61,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
         reservations:
           memory: 128M
     networks:
