@@ -12,7 +12,11 @@
       "Bash(python3 -c \":*)",
       "Read(//usr/**)",
       "Read(//usr/local/**)",
-      "Bash(py:*)"
+      "Bash(py:*)",
+      "Bash(find:*)",
+      "Bash(grep -E \"^\\\\s{0,2}[a-z].*:\" \"/c/Users/paron/.a.paroniim/Spse Jecna/c4b/TP/PetMatch/docker-compose.yml\")",
+      "WebSearch",
+      "WebFetch(domain:nominatim.org)"
     ]
   }
 }
