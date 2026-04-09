@@ -12,24 +12,21 @@ logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-# Map internal tiers to Stripe Price IDs
-# In a real app, these should be in config or DB
-# You should replace these with your actual Stripe Price IDs
-##price_1SgbUb1guJQMZVvrmG1UUoXP  prod_TdtH4pJXQkeUDI
-TIER_PRICE_IDS = {
-    "premium": "price_1SgbUb1guJQMZVvrmG1UUoXP", # Placeholder
-    "premium_plus": "price_1SgQE51guJQMZVvrBOoeDfJ6" # Placeholder
-}
+def _get_tier_price_ids():
+    premium = settings.STRIPE_PRICE_ID_PREMIUM or "price_1SgbUb1guJQMZVvrmG1UUoXP"
+    premium_plus = settings.STRIPE_PRICE_ID_PREMIUM_PLUS or "price_1SgQE51guJQMZVvrBOoeDfJ6"
+    return {"premium": premium, "premium_plus": premium_plus}
 
 class StripeService:
     def create_checkout_session(self, user: User, tier: str) -> str:
         """
         Creates a Stripe Checkout Session for subscription upgrade.
         """
-        if tier not in TIER_PRICE_IDS:
+        tier_price_ids = _get_tier_price_ids()
+        if tier not in tier_price_ids:
             raise ValueError(f"Invalid subscription tier: {tier}")
-        
-        price_id = TIER_PRICE_IDS[tier]
+
+        price_id = tier_price_ids[tier]
         
         if not stripe.api_key:
              # For development without stripe keys, return a dummy URL or error

@@ -42,8 +42,8 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=6&featuretype=city`,
-          { headers: { 'Accept-Language': 'en' } }
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=6`,
+          { headers: { 'Accept-Language': 'en', 'User-Agent': 'PetMatch/1.0' } }
         );
         const data = await res.json();
         setResults(data);

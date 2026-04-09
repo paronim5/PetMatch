@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: Optional[str] = None
     STRIPE_SUCCESS_URL: str = "https://paroniim.xyz/profile?success=true&session_id={CHECKOUT_SESSION_ID}"
     STRIPE_CANCEL_URL: str = "https://paroniim.xyz/profile?canceled=true"
+    STRIPE_PRICE_ID_PREMIUM: Optional[str] = None
+    STRIPE_PRICE_ID_PREMIUM_PLUS: Optional[str] = None
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
