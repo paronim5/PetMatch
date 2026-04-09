@@ -193,15 +193,15 @@ const LandingPage = () => {
 
       {/* Hero */}
       <section ref={heroRef} className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
-        <div className="max-w-3xl mx-4">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4">
           {/* Glassmorphism card */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-14 shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-5 sm:p-8 md:p-14 shadow-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-400/30 text-rose-300 text-xs font-bold uppercase tracking-widest mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
               Find Your Match
             </div>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight">
               Welcome to{' '}
               <span className="bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-transparent">
                 PetMatch
@@ -216,13 +216,13 @@ const LandingPage = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate('/signup')}
-                className="px-8 py-4 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-2xl text-lg font-bold hover:scale-105 transition-transform shadow-xl shadow-rose-900/40 active:scale-95"
+                className="px-5 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-2xl text-base sm:text-lg font-bold hover:scale-105 transition-transform shadow-xl shadow-rose-900/40 active:scale-95"
               >
                 Get Started Free
               </button>
               <button
                 onClick={scrollToSection}
-                className="px-8 py-4 bg-white/10 border border-white/20 text-white rounded-2xl text-lg font-bold hover:bg-white/20 transition-all backdrop-blur-sm"
+                className="px-5 sm:px-8 py-3 sm:py-4 bg-white/10 border border-white/20 text-white rounded-2xl text-base sm:text-lg font-bold hover:bg-white/20 transition-all backdrop-blur-sm"
               >
                 Learn More
               </button>
@@ -230,14 +230,14 @@ const LandingPage = () => {
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6">
             {[
               { value: '10K+', label: 'Happy Matches' },
               { value: '500+', label: 'Shelters' },
               { value: '98%', label: 'Satisfaction' },
             ].map((s, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4">
-                <div className="text-2xl md:text-3xl font-black text-white">{s.value}</div>
+              <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2 sm:p-4">
+                <div className="text-lg sm:text-2xl md:text-3xl font-black text-white">{s.value}</div>
                 <div className="text-xs text-white/50 font-medium mt-0.5">{s.label}</div>
               </div>
             ))}

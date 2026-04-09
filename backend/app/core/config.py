@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     # Stripe
     STRIPE_SECRET_KEY: Optional[str] = None
     STRIPE_WEBHOOK_SECRET: Optional[str] = None
-    STRIPE_SUCCESS_URL: str = "https://paroniim.xyz/profile?success=true"
+    STRIPE_SUCCESS_URL: str = "https://paroniim.xyz/profile?success=true&session_id={CHECKOUT_SESSION_ID}"
     STRIPE_CANCEL_URL: str = "https://paroniim.xyz/profile?canceled=true"
 
     model_config = SettingsConfigDict(

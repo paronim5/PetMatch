@@ -1,8 +1,11 @@
+import logging
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.api import deps
+
+logger = logging.getLogger(__name__)
 from app.domain.models import User
 from app.services.subscription_service import subscription_service
 from app.services.stripe_service import stripe_service
@@ -67,7 +70,8 @@ def create_checkout_session(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        logger.error(f"Stripe checkout error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/webhook", include_in_schema=False)
 async def stripe_webhook(
