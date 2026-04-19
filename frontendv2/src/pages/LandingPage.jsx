@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 import FloatingBoxes from '../components/FloatingBoxes';
+import PretextTitle from '../components/PretextTitle';
+import PretextCatText from '../components/PretextCatText';
 
 const CatScene = lazy(() => import('../components/CatScene'));
 
@@ -36,7 +38,9 @@ const LandingPage = () => {
   const [bgShouldLoad, setBgShouldLoad] = useState(false);
   const [bgLoaded, setBgLoaded] = useState(false);
   const [showScene, setShowScene] = useState(false);
+  const [fadeOutAt, setFadeOutAt] = useState(0.62);
   const heroRef = useRef(null);
+  const statsRef = useRef(null);
 
   const messages = [
     'Find your perfect pet companion.',
@@ -97,6 +101,21 @@ const LandingPage = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Recalculate fade-out threshold whenever the stats section position changes (e.g. on resize)
+  useEffect(() => {
+    const update = () => {
+      if (!statsRef.current) return;
+      const totalScrollable = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalScrollable <= 0) return;
+      // Start fading boxes out 80px before the stats section enters the viewport
+      const threshold = (statsRef.current.offsetTop - window.innerHeight - 80) / totalScrollable;
+      setFadeOutAt(Math.max(0.3, Math.min(0.75, threshold)));
+    };
+    update();
+    window.addEventListener('resize', update, { passive: true });
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   const easeInOutQuad = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
   const scrollToSection = () => {
@@ -123,7 +142,7 @@ const LandingPage = () => {
       {/* Scroll progress bar */}
       <div className="fixed top-0 left-0 w-full h-[3px] z-50">
         <div
-          className="h-full bg-gradient-to-r from-orange-400 via-rose-500 to-pink-500 transition-none"
+          className="h-full bg-gradient-to-r from-violet-500 via-purple-500 to-violet-400 transition-none"
           style={{ width: `${scrollProgress * 100}%` }}
         />
       </div>
@@ -151,7 +170,12 @@ const LandingPage = () => {
           onLoad={() => setBgLoaded(true)} />
       )}
 
-      {/* 3D Cat — lazy loaded */}
+      {/* Pretext scroll text — renders behind cat; cat punches hole through it */}
+      {showScene && (
+        <PretextCatText scrollProgress={scrollProgress} isMobile={isMobile} />
+      )}
+
+      {/* 3D Cat — lazy loaded, renders on top of PretextCatText */}
       {showScene && (
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
           <Suspense fallback={null}>
@@ -166,13 +190,13 @@ const LandingPage = () => {
         </div>
       )}
 
-      <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} />
+      <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} fadeOutAt={fadeOutAt} />
 
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 p-4 md:p-6 z-30 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span className="text-2xl font-black text-white tracking-tight drop-shadow-lg">
-            Pet<span className="text-rose-400">Match</span>
+            Pet<span className="text-violet-400">Match</span>
           </span>
         </div>
         <div className="flex gap-3">
@@ -184,7 +208,7 @@ const LandingPage = () => {
           </button>
           <button
             onClick={() => navigate('/signup')}
-            className="px-5 py-2.5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-orange-400 hover:opacity-90 transition-all shadow-lg shadow-rose-900/40"
+            className="px-5 py-2.5 rounded-full text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-all shadow-lg shadow-violet-900/40"
           >
             Sign Up
           </button>
@@ -196,27 +220,30 @@ const LandingPage = () => {
         <div className="max-w-3xl mx-auto px-3 sm:px-4">
           {/* Glassmorphism card */}
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-5 sm:p-8 md:p-14 shadow-2xl">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/20 border border-rose-400/30 text-rose-300 text-xs font-bold uppercase tracking-widest mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-300 text-xs font-bold uppercase tracking-widest mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
               Find Your Match
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight">
-              Welcome to{' '}
-              <span className="bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-transparent">
-                PetMatch
-              </span>
-            </h1>
+            <div className="mb-6">
+              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight mb-1">
+                Welcome to
+              </p>
+              <PretextTitle
+                text="PetMatch"
+                fontSize={isMobile ? 48 : 76}
+              />
+            </div>
 
             <p className="text-lg md:text-xl text-white/70 mb-10 h-8 flex items-center justify-center">
               <span className="font-medium">{typingText}</span>
-              <span className="ml-1 text-rose-400 animate-pulse font-light">|</span>
+              <span className="ml-1 text-violet-400 animate-pulse font-light">|</span>
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => navigate('/signup')}
-                className="px-5 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-2xl text-base sm:text-lg font-bold hover:scale-105 transition-transform shadow-xl shadow-rose-900/40 active:scale-95"
+                className="px-5 sm:px-8 py-3 sm:py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-base sm:text-lg font-bold hover:scale-105 transition-all shadow-xl shadow-violet-900/40 active:scale-95"
               >
                 Get Started Free
               </button>
@@ -248,12 +275,12 @@ const LandingPage = () => {
       <div id="floating-boxes-start" className="h-[200vh]" />
 
       {/* Stats section */}
-      <section className="relative z-10 py-20 px-4 bg-gray-950">
+      <section ref={statsRef} className="relative z-10 py-20 px-4 bg-gray-950">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-5xl font-black text-white mb-4">
               The Numbers{' '}
-              <span className="bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-violet-400 to-purple-300 bg-clip-text text-transparent">
                 Speak
               </span>
             </h2>
@@ -303,7 +330,7 @@ const LandingPage = () => {
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-5xl font-black text-white mb-4">
               Why Choose{' '}
-              <span className="bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-violet-400 to-purple-300 bg-clip-text text-transparent">
                 PetMatch?
               </span>
             </h2>
@@ -318,22 +345,22 @@ const LandingPage = () => {
                 icon: '🏠',
                 title: 'Find Your Match',
                 desc: 'Browse thousands of adorable pets waiting for loving homes.',
-                accent: 'from-rose-500/20 to-rose-500/5',
-                border: 'border-rose-500/20',
+                accent: 'from-violet-500/20 to-violet-500/5',
+                border: 'border-violet-500/20',
               },
               {
                 icon: '❤️',
                 title: 'Safe & Secure',
                 desc: 'Verified shelters and a responsible, AI-powered adoption process.',
-                accent: 'from-orange-500/20 to-orange-500/5',
-                border: 'border-orange-500/20',
+                accent: 'from-purple-500/20 to-purple-500/5',
+                border: 'border-purple-500/20',
               },
               {
                 icon: '🎉',
                 title: 'Support Network',
                 desc: 'Connect with experienced pet owners and get expert advice.',
-                accent: 'from-pink-500/20 to-pink-500/5',
-                border: 'border-pink-500/20',
+                accent: 'from-indigo-500/20 to-indigo-500/5',
+                border: 'border-indigo-500/20',
               },
             ].map((f, i) => (
               <div
@@ -350,13 +377,13 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Banner */}
-      <section className="relative z-10 py-16 px-4 bg-gradient-to-r from-rose-600 to-orange-500">
+      <section className="relative z-10 py-16 px-4 bg-gradient-to-r from-violet-700 to-purple-600">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Ready to find your perfect pet?</h2>
           <p className="text-white/80 text-lg mb-8">Join thousands of happy families who found their match.</p>
           <button
             onClick={() => navigate('/signup')}
-            className="px-10 py-4 bg-white text-rose-600 rounded-2xl text-lg font-black hover:scale-105 transition-transform shadow-xl"
+            className="px-10 py-4 bg-white text-violet-700 rounded-2xl text-lg font-black hover:scale-105 transition-transform shadow-xl"
           >
             Start Matching Now
           </button>

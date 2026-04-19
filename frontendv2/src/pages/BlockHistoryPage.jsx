@@ -1,32 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { userService } from '../services/user';
 import { useNotification } from '../context/useNotification';
-import { FaArrowLeft, FaBan, FaUnlock, FaFlag, FaUser } from 'react-icons/fa';
+import { FaArrowLeft, FaBan, FaUnlock, FaFlag, FaUser, FaFire, FaComments, FaHeart } from 'react-icons/fa';
+
+const BottomNav = () => {
+  const { pathname } = useLocation();
+  const links = [
+    { to: '/matching', icon: FaFire, label: 'Discover' },
+    { to: '/chat', icon: FaComments, label: 'Chat' },
+    { to: '/history', icon: FaHeart, label: 'Likes' },
+    { to: '/profile', icon: FaUser, label: 'Profile' },
+  ];
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-30">
+      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+        {links.map(({ to, icon: Icon, label }) => {
+          const active = pathname === to;
+          return (
+            <Link key={to} to={to} className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all ${active ? 'text-violet-400' : 'text-gray-500 hover:text-gray-300'}`}>
+              <Icon size={active ? 22 : 20} />
+              <span className="text-[10px] font-medium">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+};
 
 const BlockHistoryPage = () => {
   const navigate = useNavigate();
   const { addToast } = useNotification();
-  const [activeTab, setActiveTab] = useState('blocks'); // 'blocks' or 'reports'
+  const [activeTab, setActiveTab] = useState('blocks');
   const [blocks, setBlocks] = useState([]);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+  useEffect(() => { fetchData(); }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
       if (activeTab === 'blocks') {
-        const data = await userService.getBlocks();
-        setBlocks(data);
+        setBlocks(await userService.getBlocks());
       } else {
-        const data = await userService.getReports();
-        setReports(data);
+        setReports(await userService.getReports());
       }
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -42,126 +63,117 @@ const BlockHistoryPage = () => {
       setBlocks(prev => prev.filter(b => b.blocked_id !== blockedId));
       addToast('User unblocked successfully.', 'success');
     } catch (err) {
-      console.error('Failed to unblock:', err);
-      addToast('Failed to unblock user. Please try again.', 'error');
+      addToast('Failed to unblock user.', 'error');
     }
   };
 
+  const statusColors = {
+    pending: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+    resolved: 'bg-green-500/10 text-green-400 border border-green-500/20',
+    default: 'bg-gray-800 text-gray-400 border border-gray-700',
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-950 flex flex-col pb-16">
       {/* Header */}
-      <div className="bg-white shadow-sm p-4 flex items-center px-6">
-        <button 
-          onClick={() => navigate('/profile')}
-          className="mr-4 text-gray-600 hover:text-rose-500"
-        >
-          <FaArrowLeft size={20} />
+      <div className="bg-gray-900 border-b border-gray-800 flex items-center gap-3 px-4 py-4">
+        <button onClick={() => navigate('/profile')} className="text-gray-400 hover:text-white transition-colors p-1 -ml-1">
+          <FaArrowLeft size={18} />
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Blocking & Reporting</h1>
+        <h1 className="text-lg font-bold text-white">Blocking & Reports</h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white border-b border-gray-200">
-        <button
-          className={`flex-1 py-4 text-center font-medium ${activeTab === 'blocks' ? 'text-rose-500 border-b-2 border-rose-500' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setActiveTab('blocks')}
-        >
-          Blocked Users
-        </button>
-        <button
-          className={`flex-1 py-4 text-center font-medium ${activeTab === 'reports' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-500 hover:text-gray-700'}`}
-          onClick={() => setActiveTab('reports')}
-        >
-          My Reports
-        </button>
+      <div className="flex bg-gray-900 border-b border-gray-800">
+        {[
+          { key: 'blocks', label: 'Blocked Users', icon: FaBan },
+          { key: 'reports', label: 'My Reports', icon: FaFlag },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium transition-all relative ${activeTab === key ? 'text-violet-400' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <Icon size={14} /> {label}
+            {activeTab === key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500" />}
+          </button>
+        ))}
       </div>
 
       {/* Content */}
       <div className="flex-1 p-4 max-w-2xl mx-auto w-full">
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
+          <div className="flex justify-center py-10">
+            <div className="w-8 h-8 border-2 border-violet-600/30 border-t-violet-600 rounded-full animate-spin" />
           </div>
         ) : error ? (
-          <div className="text-center text-red-500 py-8">{error}</div>
+          <div className="text-center text-red-400 py-8">{error}</div>
         ) : activeTab === 'blocks' ? (
-          /* Blocks List */
           blocks.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <FaBan className="mx-auto text-4xl mb-2 text-gray-300" />
-              <p>You haven't blocked anyone yet.</p>
+            <div className="flex flex-col items-center justify-center h-48 text-center">
+              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <FaBan className="text-gray-600 text-2xl" />
+              </div>
+              <p className="text-gray-400">No blocked users</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {blocks.map((block) => (
-                <div key={block.id} className="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3 text-gray-500">
-                      <FaUser />
+                <div key={block.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-gray-400">
+                      <FaUser size={16} />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">
-                        {block.blocked?.username || `User #${block.blocked_id}`}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Blocked on {new Date(block.created_at).toLocaleDateString()}
-                      </p>
-                      {block.reason && (
-                        <p className="text-sm text-gray-600 mt-1 italic">"{block.reason}"</p>
-                      )}
+                      <p className="font-semibold text-white">{block.blocked?.username || `User #${block.blocked_id}`}</p>
+                      <p className="text-xs text-gray-500">Blocked {new Date(block.created_at).toLocaleDateString()}</p>
+                      {block.reason && <p className="text-xs text-gray-500 mt-0.5 italic">"{block.reason}"</p>}
                     </div>
                   </div>
                   <button
                     onClick={() => handleUnblock(block.blocked_id)}
-                    className="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-1"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-sm text-gray-300 transition-all"
                   >
-                    <FaUnlock size={12} /> Unblock
+                    <FaUnlock size={11} /> Unblock
                   </button>
                 </div>
               ))}
             </div>
           )
         ) : (
-          /* Reports List */
           reports.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <FaFlag className="mx-auto text-4xl mb-2 text-gray-300" />
-              <p>You haven't submitted any reports.</p>
+            <div className="flex flex-col items-center justify-center h-48 text-center">
+              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                <FaFlag className="text-gray-600 text-2xl" />
+              </div>
+              <p className="text-gray-400">No reports submitted</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {reports.map((report) => (
-                <div key={report.id} className="bg-white p-4 rounded-lg shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3 text-orange-500">
-                        <FaFlag size={14} />
+                <div key={report.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-orange-500/10 border border-orange-500/20 rounded-full flex items-center justify-center">
+                        <FaFlag className="text-orange-400" size={13} />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800">
+                        <p className="font-semibold text-white text-sm">
                           Reported {report.reported?.username || `User #${report.reported_id}`}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(report.created_at).toLocaleDateString()}
-                        </p>
+                        <p className="text-xs text-gray-500">{new Date(report.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                      report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold uppercase ${statusColors[report.status] || statusColors.default}`}>
                       {report.status}
                     </span>
                   </div>
-                  <div className="ml-11">
-                    <p className="text-sm font-medium text-gray-700">Reason: {report.reason}</p>
-                    {report.description && (
-                      <p className="text-sm text-gray-600 mt-1">{report.description}</p>
-                    )}
+                  <div className="ml-12">
+                    <p className="text-sm text-gray-300">Reason: <span className="text-gray-400">{report.reason}</span></p>
+                    {report.description && <p className="text-sm text-gray-500 mt-1">{report.description}</p>}
                     {report.resolution_notes && (
-                      <div className="mt-3 bg-gray-50 p-2 rounded text-sm border-l-2 border-gray-300">
-                        <span className="font-bold text-gray-700">Resolution:</span> {report.resolution_notes}
+                      <div className="mt-3 bg-gray-800 border-l-2 border-violet-500 p-3 rounded-r-xl text-sm text-gray-400">
+                        <span className="font-semibold text-gray-300">Resolution: </span>{report.resolution_notes}
                       </div>
                     )}
                   </div>
@@ -171,6 +183,8 @@ const BlockHistoryPage = () => {
           )
         )}
       </div>
+
+      <BottomNav />
     </div>
   );
 };

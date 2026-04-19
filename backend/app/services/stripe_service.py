@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def _get_tier_price_ids():
-    premium = settings.STRIPE_PRICE_ID_PREMIUM or "price_1SgbUb1guJQMZVvrmG1UUoXP"
+    premium = settings.STRIPE_PRICE_ID_PREMIUM or "price_1TMkPK1guJQMZVvr4hHYmDnr"
     premium_plus = settings.STRIPE_PRICE_ID_PREMIUM_PLUS or "price_1SgQE51guJQMZVvrBOoeDfJ6"
     return {"premium": premium, "premium_plus": premium_plus}
 

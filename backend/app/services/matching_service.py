@@ -18,22 +18,29 @@ class LocationBasedMatching(MatchingStrategy):
     def find_matches(self, db: Session, user: User, limit: int = 10) -> List[User]:
         try:
             logger.info(f"Finding matches for user {user.id}")
-            if not user.profile or not user.profile.location:
-                logger.warning(f"User {user.id} has no profile or location")
+            if not user.profile:
+                logger.warning(f"User {user.id} has no profile")
                 return []
-                
+
+            user_has_location = user.profile.location is not None
+            if not user_has_location:
+                logger.info(f"User {user.id} has no location — skipping distance filter")
+
             # Get user preferences or defaults
             max_distance_km = 50
             if user.preferences and user.preferences.max_distance:
                 max_distance_km = user.preferences.max_distance
-            
+
             logger.info(f"User {user.id} preferences: max_dist={max_distance_km}, min_age={user.preferences.min_age if user.preferences else 'N/A'}")
-                
+
             # Convert km to meters
             max_distance_meters = max_distance_km * 1000
             
-            # Get IDs of users already swiped by this user
-            swiped_ids_query = db.query(Swipe.swiped_id).filter(Swipe.swiper_id == user.id)
+            # Only exclude users that were liked/super_liked — passes are not permanent
+            swiped_ids_query = db.query(Swipe.swiped_id).filter(
+                Swipe.swiper_id == user.id,
+                Swipe.swipe_type.in_([SwipeType.like, SwipeType.super_like])
+            )
             
             # Get IDs of users blocked by this user or who blocked this user
             blocked_ids_query = db.query(Block.blocked_id).filter(Block.blocker_id == user.id)
@@ -75,7 +82,7 @@ class LocationBasedMatching(MatchingStrategy):
             self_interest_ids = db.query(UserInterest.interest_id).filter(UserInterest.user_id == user.id).subquery()
             
             # Base query for potential matches
-            distance_expr = func.ST_Distance(UserProfile.location, user.profile.location)
+            distance_expr = func.ST_Distance(UserProfile.location, user.profile.location) if user_has_location else None
             shared_count_expr = func.count(UserInterest.interest_id)
             
             remaining_limit = limit - len(likers)
@@ -101,13 +108,21 @@ class LocationBasedMatching(MatchingStrategy):
                     User.id.notin_(liker_ids_query),            # Exclude likers using standard query
                     User.id.notin_(blocked_ids_query),          # Exclude users I blocked
                     User.id.notin_(blocker_ids_query),          # Exclude users who blocked me
-                    ST_DWithin(
-                        UserProfile.location,
-                        user.profile.location,
-                        max_distance_meters
-                    )
                 ).group_by(User.id, UserProfile.location)
-                
+
+                # Only apply distance filter when the current user has a location set
+                if user_has_location:
+                    query = query.filter(
+                        or_(
+                            UserProfile.location == None,
+                            ST_DWithin(
+                                UserProfile.location,
+                                user.profile.location,
+                                max_distance_meters
+                            )
+                        )
+                    )
+
                 # Filter by gender if specified
                 if user.preferences and user.preferences.preferred_genders:
                     query = query.filter(UserProfile.gender.in_(user.preferences.preferred_genders))
@@ -149,8 +164,11 @@ class LocationBasedMatching(MatchingStrategy):
                         # Note: different_religion and long_distance would require more complex logic
                         # likely involving user's own religion/location, which is partially covered by distance filter
 
-                # Order by compatibility: more shared interests, closer distance
-                query = query.order_by(desc(shared_count_expr), distance_expr)
+                # Order by compatibility: more shared interests, then closer distance if available
+                if distance_expr is not None:
+                    query = query.order_by(desc(shared_count_expr), distance_expr)
+                else:
+                    query = query.order_by(desc(shared_count_expr))
 
                 logger.info(f"Executing standard matches query for user {user.id}")
                 standard_matches = query.limit(remaining_limit).all()

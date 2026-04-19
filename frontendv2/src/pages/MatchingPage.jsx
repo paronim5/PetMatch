@@ -1,15 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
+import PretextBio from '../components/PretextBio';
 import { matchingService } from '../services/matching';
 import { subscriptionService } from '../services/subscription';
 import { useNotification } from '../context/useNotification';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
-import { 
-  FaHeart, FaTimes, FaStar, FaUndo, FaBolt, FaUser, 
-  FaRulerVertical, FaGraduationCap, FaBriefcase, FaWineGlass, 
-  FaSmoking, FaComments, FaHistory, FaFlag, FaBan, FaPlay, FaCrown
+import {
+  FaHeart, FaTimes, FaStar, FaUndo, FaBolt, FaUser,
+  FaRulerVertical, FaGraduationCap, FaBriefcase, FaWineGlass,
+  FaSmoking, FaComments, FaHistory, FaFlag, FaBan, FaPlay, FaCrown, FaFire, FaPaw
 } from 'react-icons/fa';
+
+const BottomNav = () => {
+  const { pathname } = useLocation();
+  const links = [
+    { to: '/matching', icon: FaFire, label: 'Discover' },
+    { to: '/chat', icon: FaComments, label: 'Chat' },
+    { to: '/history', icon: FaHeart, label: 'Likes' },
+    { to: '/profile', icon: FaUser, label: 'Profile' },
+  ];
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-30">
+      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+        {links.map(({ to, icon: Icon, label }) => {
+          const active = pathname === to;
+          return (
+            <Link key={to} to={to} className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all ${active ? 'text-violet-400' : 'text-gray-500 hover:text-gray-300'}`}>
+              <Icon size={active ? 22 : 20} />
+              <span className="text-[10px] font-medium">{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+};
 
 const MatchingPage = () => {
   const { addToast } = useNotification();
@@ -19,43 +45,51 @@ const MatchingPage = () => {
   const [error, setError] = useState(null);
   const [photoIndex, setPhotoIndex] = useState(0);
 
-  // Subscription State
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [adLoading, setAdLoading] = useState(false);
 
-  // Block/Report State
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
 
-  // Swipe State
   const [dragStart, setDragStart] = useState(null);
   const [dragCurrent, setDragCurrent] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(null);
 
-  useEffect(() => {
-    fetchCandidates();
-  }, []);
+  useEffect(() => { fetchCandidates(); }, []);
 
-  const fetchCandidates = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (!loading && candidates.length > 0 && currentIndex >= candidates.length - 2) {
+      fetchCandidates(true);
+    }
+  }, [currentIndex]);
+
+  const fetchCandidates = async (append = false) => {
+    if (!append) setLoading(true);
     try {
       const users = await matchingService.getCandidates();
-      setCandidates(users);
+      if (append) {
+        setCandidates(prev => {
+          const existingIds = new Set(prev.map(u => u.id));
+          const fresh = users.filter(u => !existingIds.has(u.id));
+          return fresh.length > 0 ? [...prev, ...fresh] : prev;
+        });
+      } else {
+        setCandidates(users);
+        setCurrentIndex(0);
+      }
       setError(null);
     } catch (error) {
       console.error('Failed to fetch candidates:', error);
-      setError('Failed to load matches. Please try again.');
+      if (!append) setError('Failed to load matches. Please try again.');
     } finally {
-      setLoading(false);
+      if (!append) setLoading(false);
     }
   };
 
-  // Logic to handle success from Block/Report modals
   const handleBlockReportSuccess = () => {
     setShowBlockModal(false);
     setShowReportModal(false);
-    // Remove the current user from the stack
     setCurrentIndex((prev) => prev + 1);
     setPhotoIndex(0);
   };
@@ -64,9 +98,7 @@ const MatchingPage = () => {
     if (currentIndex < candidates.length) {
       const userToSwipe = candidates[currentIndex];
       const swipeType = direction === 'right' ? 'like' : direction === 'up' ? 'super_like' : 'pass';
-      
       setSwipeDirection(direction);
-      
       setTimeout(async () => {
         try {
           await matchingService.swipe(userToSwipe.id, swipeType);
@@ -93,7 +125,6 @@ const MatchingPage = () => {
     }
   };
 
-  // Touch/Mouse Handlers
   const handleDragStart = (e) => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -114,7 +145,6 @@ const MatchingPage = () => {
     const deltaX = dragCurrent.x - dragStart.x;
     const deltaY = dragCurrent.y - dragStart.y;
     const threshold = 100;
-
     if (Math.abs(deltaX) > threshold) {
       handleSwipe(deltaX > 0 ? 'right' : 'left');
     } else if (deltaY < -threshold) {
@@ -129,7 +159,6 @@ const MatchingPage = () => {
   const handleWatchAd = async () => {
     setAdLoading(true);
     try {
-      // Simulate ad delay
       await new Promise(resolve => setTimeout(resolve, 3000));
       await subscriptionService.watchAd();
       setShowSubscriptionModal(false);
@@ -145,7 +174,7 @@ const MatchingPage = () => {
     try {
       await subscriptionService.upgrade('premium');
       setShowSubscriptionModal(false);
-      addToast('Welcome to Premium! You now have unlimited swipes.', 'success');
+      addToast('Welcome to Premium!', 'success');
     } catch (error) {
       addToast('Upgrade failed. Please try again.', 'error');
     }
@@ -156,43 +185,50 @@ const MatchingPage = () => {
       const x = swipeDirection === 'right' ? 1000 : swipeDirection === 'left' ? -1000 : 0;
       const y = swipeDirection === 'up' ? -1000 : 0;
       const rot = swipeDirection === 'right' ? 20 : swipeDirection === 'left' ? -20 : 0;
-      return {
-        transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`,
-        transition: 'transform 0.3s ease-out',
-        opacity: 0
-      };
+      return { transform: `translate(${x}px, ${y}px) rotate(${rot}deg)`, transition: 'transform 0.3s ease-out', opacity: 0 };
     }
-    
     if (isDragging && dragCurrent && dragStart) {
       const deltaX = dragCurrent.x - dragStart.x;
       const deltaY = dragCurrent.y - dragStart.y;
-      const rot = deltaX * 0.1;
-      return {
-        transform: `translate(${deltaX}px, ${deltaY}px) rotate(${rot}deg)`,
-        transition: 'none',
-        cursor: 'grabbing'
-      };
+      return { transform: `translate(${deltaX}px, ${deltaY}px) rotate(${deltaX * 0.08}deg)`, transition: 'none', cursor: 'grabbing' };
     }
     return { transition: 'transform 0.3s ease-out', cursor: 'grab' };
   };
 
-  const handleRewind = () => addToast('Rewind is a Premium feature!', 'info');
-  const handleBoost = () => addToast('Boost activated!', 'success');
+  const getPhotoUrl = (url) => {
+    if (!url) return null;
+    const i = url.indexOf('/static/');
+    return i !== -1 ? url.substring(i) : url;
+  };
+
+  const getSwipeOverlay = () => {
+    if (!isDragging || !dragStart || !dragCurrent) return null;
+    const deltaX = dragCurrent.x - dragStart.x;
+    if (Math.abs(deltaX) < 30) return null;
+    return deltaX > 0 ? 'like' : 'nope';
+  };
+
+  const swipeOverlay = getSwipeOverlay();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-violet-600/30 border-t-violet-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">Finding your matches...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button onClick={fetchCandidates} className="px-4 py-2 bg-rose-500 text-white rounded hover:bg-rose-600">Retry</button>
+          <p className="text-red-400 mb-4">{error}</p>
+          <button onClick={fetchCandidates} className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-all">
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -200,34 +236,33 @@ const MatchingPage = () => {
 
   if (candidates.length === 0 || currentIndex >= candidates.length) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-100">
-        <div className="w-full bg-white shadow-sm p-4 flex justify-between items-center px-6">
-          <h1 className="text-2xl font-bold text-rose-500">PetMatch</h1>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-            <Link to="/chat" className="text-gray-600 hover:text-rose-500"><FaComments size={24} /></Link>
-            <Link to="/profile" className="text-gray-600 hover:text-rose-500"><FaUser size={24} /></Link>
+      <div className="min-h-screen bg-gray-950 flex flex-col pb-16">
+        <div className="w-full bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <FaPaw className="text-violet-400" />
+            <h1 className="text-xl font-bold text-white">PetMatch</h1>
+          </div>
+          <NotificationBell />
+        </div>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-5">
+              <FaFire className="text-3xl text-gray-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">You're all caught up!</h2>
+            <p className="text-gray-400 mb-6">No more profiles to show right now. Check back later or refresh.</p>
+            <button
+              onClick={() => { setCurrentIndex(0); fetchCandidates(); }}
+              className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-violet-600/20"
+            >
+              Refresh Matches
+            </button>
           </div>
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md mx-4">
-            <h2 className="text-2xl font-bold text-gray-700 mb-2">No more profiles!</h2>
-            <button onClick={() => { setCurrentIndex(0); fetchCandidates(); }} className="w-full mt-4 px-4 py-2 bg-rose-500 text-white rounded">Refresh Matches</button>
-          </div>
-        </div>
+        <BottomNav />
       </div>
     );
   }
-
-  // Helper to sanitize photo URLs
-  const getPhotoUrl = (url) => {
-    if (!url) return null;
-    const staticIndex = url.indexOf('/static/');
-    if (staticIndex !== -1) {
-      return url.substring(staticIndex);
-    }
-    return url;
-  };
 
   const currentUser = candidates[currentIndex];
   const currentProfile = currentUser.profile;
@@ -237,21 +272,21 @@ const MatchingPage = () => {
   const likedYou = currentUser.liked_you;
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-100 relative">
-      <div className="w-full bg-white shadow-sm p-4 flex justify-between items-center px-6">
-        <h1 className="text-2xl font-bold text-rose-500">PetMatch</h1>
-        <div className="flex items-center gap-4">
-          <NotificationBell />
-          <Link to="/chat" className="text-gray-600 hover:text-rose-500"><FaComments size={24} /></Link>
-          <Link to="/history" className="text-gray-600 hover:text-rose-500"><FaHistory size={24} /></Link>
-          <Link to="/profile" className="text-gray-600 hover:text-rose-500"><FaUser size={24} /></Link>
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center pb-16">
+      {/* Header */}
+      <div className="w-full bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <FaPaw className="text-violet-400" />
+          <h1 className="text-xl font-bold text-white">PetMatch</h1>
         </div>
+        <NotificationBell />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md p-4">
-        <div 
-          className="relative w-full bg-white rounded-2xl shadow-xl overflow-hidden h-[60vh] min-h-[400px] max-h-[600px] flex flex-col select-none touch-none"
-          style={getCardStyle()}
+      {/* Card Stack */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-sm px-4 pt-4">
+        <div
+          className="relative w-full rounded-2xl overflow-hidden shadow-2xl select-none touch-none"
+          style={{ ...getCardStyle(), height: '62vh', minHeight: 420, maxHeight: 580 }}
           onMouseDown={handleDragStart}
           onMouseMove={handleDragMove}
           onMouseUp={handleDragEnd}
@@ -259,145 +294,145 @@ const MatchingPage = () => {
           onTouchStart={handleDragStart}
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
+        >
+          {/* Photo */}
+          <div
+            className="absolute inset-0 bg-gray-800"
+            onClick={() => setPhotoIndex((prev) => (photos.length ? (prev + 1) % photos.length : 0))}
           >
-          <div className="h-3/5 bg-gray-300 flex items-center justify-center relative overflow-hidden" onClick={() => setPhotoIndex((prev) => (photos.length ? (prev + 1) % photos.length : 0))}>
-             {activePhotoUrl ? (
-               <img src={activePhotoUrl} alt={currentProfile?.first_name} className="w-full h-full object-cover" />
-             ) : (
-               <span className="text-4xl text-gray-400">No Photo</span>
-             )}
-             
-             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6 text-white">
-                <h2 className="text-3xl font-bold drop-shadow-md">
-                  {currentProfile?.first_name || 'Unknown'}, {getAge(currentProfile?.date_of_birth)}
-                </h2>
-                <p className="text-lg opacity-90 drop-shadow-sm">{currentProfile?.location_city || 'Unknown Location'}</p>
-             </div>
-
-             {likedYou && (
-               <div className="absolute top-4 left-4 bg-rose-500/90 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
-                 <FaHeart size={12} /> Liked you
-               </div>
-             )}
-
-             {/* Safety Buttons (Report/Block) */}
-             <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowReportModal(true); }}
-                  className="p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
-                >
-                  <FaFlag size={14} />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowBlockModal(true); }}
-                  className="p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
-                >
-                  <FaBan size={14} />
-                </button>
-             </div>
+            {activePhotoUrl ? (
+              <img src={activePhotoUrl} alt={currentProfile?.first_name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-600">
+                <FaUser size={64} />
+              </div>
+            )}
           </div>
-          
-          <div className="h-2/5 p-6 overflow-y-auto">
-            {currentProfile?.bio && <p className="text-gray-600 mb-4 text-lg">{currentProfile.bio}</p>}
-            
-            <div className="flex flex-wrap gap-2 mb-4">
-               {/* Restored Details: Height, Education, Occupation, Drinking, Smoking */}
-               {currentProfile?.height_value && (
-                 <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700 flex items-center gap-1">
-                   <FaRulerVertical className="text-rose-400" /> {currentProfile.height_value} {currentProfile.height_unit}
-                 </span>
-               )}
-               {currentProfile?.education && (
-                 <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700 flex items-center gap-1">
-                   <FaGraduationCap className="text-rose-400" /> {currentProfile.education}
-                 </span>
-               )}
-               {currentProfile?.occupation && (
-                 <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700 flex items-center gap-1">
-                   <FaBriefcase className="text-rose-400" /> {currentProfile.occupation}
-                 </span>
-               )}
-               {currentProfile?.drinking && currentProfile.drinking !== 'prefer_not_to_say' && (
-                 <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700 flex items-center gap-1">
-                   <FaWineGlass className="text-rose-400" /> {currentProfile.drinking}
-                 </span>
-               )}
-               {currentProfile?.smoking && currentProfile.smoking !== 'prefer_not_to_say' && (
-                 <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700 flex items-center gap-1">
-                   <FaSmoking className="text-rose-400" /> {currentProfile.smoking}
-                 </span>
-               )}
+
+          {/* Photo dots */}
+          {photos.length > 1 && (
+            <div className="absolute top-3 left-0 right-0 flex justify-center gap-1 px-4">
+              {photos.map((_, i) => (
+                <div key={i} className={`h-1 rounded-full flex-1 max-w-8 transition-all ${i === photoIndex ? 'bg-white' : 'bg-white/30'}`} />
+              ))}
             </div>
-            
-            {/* Restored Relationship Goal */}
-            <div className="text-xs text-gray-400 mt-4 uppercase tracking-wider font-semibold">
-              Relationship Goal: {currentProfile?.relationship_goal || 'Not specified'}
+          )}
+
+          {/* Swipe overlay */}
+          {swipeOverlay === 'like' && (
+            <div className="absolute top-8 left-6 border-4 border-green-400 rounded-xl px-4 py-2 rotate-[-15deg]">
+              <span className="text-green-400 font-black text-3xl">LIKE</span>
+            </div>
+          )}
+          {swipeOverlay === 'nope' && (
+            <div className="absolute top-8 right-6 border-4 border-red-400 rounded-xl px-4 py-2 rotate-[15deg]">
+              <span className="text-red-400 font-black text-3xl">NOPE</span>
+            </div>
+          )}
+
+          {/* Safety buttons */}
+          <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+            <button onClick={(e) => { e.stopPropagation(); setShowReportModal(true); }} className="w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              <FaFlag size={12} />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setShowBlockModal(true); }} className="w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-all">
+              <FaBan size={12} />
+            </button>
+          </div>
+
+          {/* Liked you badge */}
+          {likedYou && (
+            <div className="absolute top-4 left-4 bg-violet-600/90 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <FaHeart size={10} /> Liked you
+            </div>
+          )}
+
+          {/* Gradient + Info */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5">
+            <h2 className="text-2xl font-bold text-white">
+              {currentProfile?.first_name || 'Unknown'}, {getAge(currentProfile?.date_of_birth)}
+            </h2>
+            <p className="text-white/70 text-sm mt-0.5">{currentProfile?.location_city || ''}</p>
+            {currentProfile?.bio && (
+              <PretextBio bio={currentProfile.bio} maxLines={2} className="mt-2" />
+            )}
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {currentProfile?.occupation && (
+                <span className="bg-white/10 backdrop-blur-sm text-white/80 text-xs px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <FaBriefcase size={10} /> {currentProfile.occupation}
+                </span>
+              )}
+              {currentProfile?.education && (
+                <span className="bg-white/10 backdrop-blur-sm text-white/80 text-xs px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <FaGraduationCap size={10} /> {currentProfile.education}
+                </span>
+              )}
+              {currentProfile?.height_value && (
+                <span className="bg-white/10 backdrop-blur-sm text-white/80 text-xs px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <FaRulerVertical size={10} /> {currentProfile.height_value} {currentProfile.height_unit}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Swipe Controls */}
-        <div className="flex items-center justify-center gap-4 mt-6 w-full">
-          <button onClick={handleRewind} className="p-3 bg-white rounded-full shadow-lg text-yellow-500 hover:scale-110 transition-all min-h-[48px] min-w-[48px] flex items-center justify-center"><FaUndo size={20} /></button>
-          <button onClick={() => handleSwipe('left')} className="p-4 bg-white rounded-full shadow-lg text-red-500 hover:scale-110 transition-all border border-red-100 min-h-[64px] min-w-[64px] flex items-center justify-center"><FaTimes size={32} /></button>
-          <button onClick={() => handleSwipe('up')} className="p-3 bg-white rounded-full shadow-lg text-blue-500 hover:scale-110 transition-all -mt-8 min-h-[48px] min-w-[48px] flex items-center justify-center"><FaStar size={24} /></button>
-          <button onClick={() => handleSwipe('right')} className="p-4 bg-white rounded-full shadow-lg text-green-500 hover:scale-110 transition-all border border-green-100 min-h-[64px] min-w-[64px] flex items-center justify-center"><FaHeart size={32} /></button>
-          <button onClick={handleBoost} className="p-3 bg-white rounded-full shadow-lg text-purple-500 hover:scale-110 transition-all min-h-[48px] min-w-[48px] flex items-center justify-center"><FaBolt size={20} /></button>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-center gap-4 mt-5 w-full">
+          <button
+            onClick={() => addToast('Rewind is a Premium feature!', 'info')}
+            className="w-12 h-12 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center text-yellow-400 hover:border-yellow-400/50 hover:scale-105 transition-all shadow-lg"
+          >
+            <FaUndo size={18} />
+          </button>
+          <button
+            onClick={() => handleSwipe('left')}
+            className="w-16 h-16 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center text-red-400 hover:border-red-400/50 hover:scale-105 transition-all shadow-lg"
+          >
+            <FaTimes size={28} />
+          </button>
+          <button
+            onClick={() => handleSwipe('up')}
+            className="w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center text-white hover:bg-violet-500 hover:scale-105 transition-all shadow-lg shadow-violet-600/30 -mt-6"
+          >
+            <FaStar size={20} />
+          </button>
+          <button
+            onClick={() => handleSwipe('right')}
+            className="w-16 h-16 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center text-green-400 hover:border-green-400/50 hover:scale-105 transition-all shadow-lg"
+          >
+            <FaHeart size={28} />
+          </button>
+          <button
+            onClick={() => addToast('Boost activated!', 'success')}
+            className="w-12 h-12 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center text-purple-400 hover:border-purple-400/50 hover:scale-105 transition-all shadow-lg"
+          >
+            <FaBolt size={18} />
+          </button>
         </div>
       </div>
-      
-      <BlockModal 
-        show={showBlockModal}
-        onClose={() => setShowBlockModal(false)}
-        onBlock={handleBlockReportSuccess}
-        blockedUser={currentUser}
-      />
-      
-      <ReportModal
-        show={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        onReport={handleBlockReportSuccess}
-        reportedUser={currentUser}
-      />
 
-      {/* Subscription Limit Modal */}
+      <BottomNav />
+
+      <BlockModal show={showBlockModal} onClose={() => setShowBlockModal(false)} onBlock={handleBlockReportSuccess} blockedUser={currentUser} />
+      <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} onReport={handleBlockReportSuccess} reportedUser={currentUser} />
+
+      {/* Subscription Modal */}
       {showSubscriptionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center animate-bounce-in">
-            <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaCrown size={32} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaCrown className="text-yellow-400 text-2xl" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Out of Swipes!</h2>
-            <p className="text-gray-600 mb-6">
-              You've reached your daily swipe limit. Watch an ad to get more swipes or upgrade for unlimited access.
-            </p>
-            
+            <h2 className="text-xl font-bold text-white mb-2">Out of Swipes</h2>
+            <p className="text-gray-400 text-sm mb-6">Watch an ad for 5 more swipes or upgrade for unlimited access.</p>
             <div className="space-y-3">
-              <button 
-                onClick={handleWatchAd}
-                disabled={adLoading}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {adLoading ? (
-                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
-                ) : (
-                  <>
-                    <FaPlay size={16} /> Watch Ad (+5 Swipes)
-                  </>
-                )}
+              <button onClick={handleWatchAd} disabled={adLoading} className="w-full flex items-center justify-center gap-2 py-3 bg-gray-800 border border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-750 transition-all disabled:opacity-50">
+                {adLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><FaPlay size={14} /> Watch Ad (+5 Swipes)</>}
               </button>
-              
-              <button 
-                onClick={handleUpgrade}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-colors shadow-lg shadow-rose-200"
-              >
-                <FaCrown size={16} /> Upgrade to Premium
+              <button onClick={handleUpgrade} className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg">
+                <FaCrown size={14} /> Upgrade to Premium
               </button>
-              
-              <button 
-                onClick={() => setShowSubscriptionModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-sm mt-4"
-              >
+              <button onClick={() => setShowSubscriptionModal(false)} className="text-gray-500 hover:text-gray-400 text-sm transition-colors">
                 Maybe later
               </button>
             </div>

@@ -25,29 +25,32 @@ export const BlockModal = ({ show, onClose, onBlock, blockedUser }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-red-600 flex items-center">
-            <FaBan className="mr-2" /> Block User
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="w-8 h-8 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center">
+              <FaBan className="text-red-400" size={13} />
+            </div>
+            Block User
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
             <FaTimes />
           </button>
         </div>
-        
-        <p className="mb-4 text-gray-700">
-          Are you sure you want to block <strong>{blockedUser?.username || blockedUser?.first_name || 'this user'}</strong>? 
-          They will no longer be able to message you or see your profile.
+
+        <p className="mb-5 text-gray-400 text-sm">
+          Block <span className="text-white font-semibold">{blockedUser?.username || blockedUser?.first_name || 'this user'}</span>?
+          They won't be able to message you or see your profile.
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
               Reason (optional)
             </label>
             <textarea
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 transition-all resize-none"
               rows="3"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -55,23 +58,24 @@ export const BlockModal = ({ show, onClose, onBlock, blockedUser }) => {
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex gap-2 justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
               disabled={loading}
+              className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
               disabled={loading}
+              className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? 'Blocking...' : 'Confirm Block'}
+              {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+              {loading ? 'Blocking...' : 'Block User'}
             </button>
           </div>
         </form>
@@ -90,11 +94,7 @@ export const ReportModal = ({ show, onClose, onReport, reportedUser }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!reason) {
-      setError('Please select a reason.');
-      return;
-    }
-
+    if (!reason) { setError('Please select a reason.'); return; }
     setLoading(true);
     setError(null);
     try {
@@ -108,55 +108,52 @@ export const ReportModal = ({ show, onClose, onReport, reportedUser }) => {
     }
   };
 
-  const reportReasons = [
-    'Spam',
-    'Inappropriate Content',
-    'Harassment',
-    'Fake Profile',
-    'Scam',
-    'Other'
-  ];
+  const reportReasons = ['Spam', 'Inappropriate Content', 'Harassment', 'Fake Profile', 'Scam', 'Other'];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-orange-600 flex items-center">
-            <FaExclamationTriangle className="mr-2" /> Report User
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/20 rounded-full flex items-center justify-center">
+              <FaExclamationTriangle className="text-yellow-400" size={13} />
+            </div>
+            Report User
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
             <FaTimes />
           </button>
         </div>
-        
-        <p className="mb-4 text-gray-700">
-          Please tell us why you are reporting <strong>{reportedUser?.username || reportedUser?.first_name || 'this user'}</strong>.
+
+        <p className="mb-5 text-gray-400 text-sm">
+          Report <span className="text-white font-semibold">{reportedUser?.username || reportedUser?.first_name || 'this user'}</span>.
+          Our team will review the report.
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
               Reason
             </label>
             <select
-              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 transition-all"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               required
             >
-              <option value="">Select a reason</option>
+              <option value="" className="bg-gray-800">Select a reason</option>
               {reportReasons.map((r) => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r} className="bg-gray-800">{r}</option>
               ))}
             </select>
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
               Description (optional)
             </label>
             <textarea
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 transition-all resize-none"
               rows="3"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -164,22 +161,23 @@ export const ReportModal = ({ show, onClose, onReport, reportedUser }) => {
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex gap-2 justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
               disabled={loading}
+              className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 flex items-center"
               disabled={loading}
+              className="px-4 py-2.5 bg-yellow-600 hover:bg-yellow-500 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 flex items-center gap-2"
             >
+              {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
               {loading ? 'Reporting...' : 'Submit Report'}
             </button>
           </div>

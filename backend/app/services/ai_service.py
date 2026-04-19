@@ -130,11 +130,13 @@ class AIService:
 
             for _class_id, label, prob in decoded_preds:
                 label_lower = label.lower()
+                label_words = set(label_lower.split("_"))
 
                 if any(ex in label_lower for ex in excluded_keywords):
                     continue
 
-                if any(keyword in label_lower for keyword in animal_keywords):
+                # Use word-boundary matching to avoid "mouse" matching "mousetrap"
+                if any(keyword in label_words for keyword in animal_keywords):
                     if not is_animal_detected:
                         is_animal_detected = True
                         detected_type = label.replace("_", " ")
@@ -239,9 +241,13 @@ class AIService:
         if is_nsfw:
             quarantine = True
             rejection_reason = nsfw_reason
+        elif has_face:
+            quarantine = True
+            rejection_reason = "Human face detected. Please upload a pet-only photo."
+            result["is_safe"] = False
         elif not is_animal:
             quarantine = True
-            rejection_reason = "Human face detected" if has_face else "No animal detected"
+            rejection_reason = "No animal detected. Please upload a clear pet photo."
             result["is_safe"] = False
 
         return {

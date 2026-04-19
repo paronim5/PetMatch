@@ -70,7 +70,7 @@ const MOBILE_EDGE = [
   { left: 180, top: 82 },
 ];
 
-const FloatingBoxes = ({ scrollProgress, isMobile }) => {
+const FloatingBoxes = ({ scrollProgress, isMobile, fadeOutAt = 0.62 }) => {
   const navigate = useNavigate();
   const [phase, setPhase] = useState('idle');
   const triggered = useRef(false);
@@ -104,8 +104,8 @@ const FloatingBoxes = ({ scrollProgress, isMobile }) => {
     if (scrollProgress < 0.08) return 0;
 
     // Fade out when scrolling DOWN past the box zone
-    if (scrollProgress > 0.62) {
-      return Math.max(0, 1 - (scrollProgress - 0.62) / 0.13);
+    if (scrollProgress > fadeOutAt) {
+      return Math.max(0, 1 - (scrollProgress - fadeOutAt) / 0.08);
     }
 
     return 1;

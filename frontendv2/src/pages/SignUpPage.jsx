@@ -6,9 +6,9 @@ import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
 import { FaChevronLeft, FaChevronRight, FaCamera, FaMapMarkerAlt, FaCog, FaPaw } from 'react-icons/fa';
 
-const inputClass = 'block w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all text-gray-700 placeholder-gray-400 shadow-sm';
-const labelClass = 'block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1';
-const errorClass = 'mt-1 text-[10px] text-red-500 font-bold ml-1';
+const inputClass = 'block w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all text-sm';
+const labelClass = 'block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5';
+const errorClass = 'mt-1 text-[10px] text-red-400 font-bold';
 
 const STEP_TITLES = ['Create Account', 'About You', 'Lifestyle', 'Final Details'];
 
@@ -40,7 +40,7 @@ const SignUpPage = () => {
     min_age: 18,
     max_age: 100,
     max_distance: 50,
-    preferred_genders: ['female', 'male'],
+    preferred_genders: ['female', 'male', 'non_binary', 'other'],
   });
   const [submitStatus, setSubmitStatus] = useState('');
   const [profilePhotoFiles, setProfilePhotoFiles] = useState([]);
@@ -133,7 +133,31 @@ const SignUpPage = () => {
     if (!window.isSecureContext) { alert('Location requires HTTPS. Please enter manually.'); return; }
     if (!navigator.geolocation) { alert('Geolocation not supported.'); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setFormData(prev => ({ ...prev, latitude: pos.coords.latitude, longitude: pos.coords.longitude })),
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en', 'User-Agent': 'PetMatch/1.0' } }
+          );
+          const data = await res.json();
+          const city =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.municipality ||
+            data.address?.county ||
+            data.display_name.split(',')[0].trim();
+          const country = data.address?.country || '';
+          const label = country ? `${city}, ${country}` : city;
+          const option = { label, value: { lat: latitude, lon: longitude, city } };
+          setAddress(option);
+          setFormData(prev => ({ ...prev, location_city: city, latitude, longitude }));
+        } catch {
+          setFormData(prev => ({ ...prev, latitude, longitude }));
+          alert('Got your coordinates but could not resolve the city. Please search manually.');
+        }
+      },
       () => alert('Could not get location. Please enter manually.'),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -221,39 +245,45 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-orange-50 to-rose-100 py-10 px-4">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen bg-gray-950 py-8 px-4">
+      {/* bg glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-violet-600/8 rounded-full blur-3xl" />
+      </div>
 
-        {/* Stepper */}
+      <div className="max-w-lg mx-auto relative">
+        {/* Logo + title */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-violet-600 rounded-2xl mb-3 shadow-lg shadow-violet-600/30">
+            <FaPaw className="text-xl text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">{STEP_TITLES[step - 1]}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Step {step} of 4</p>
+        </div>
+
+        {/* Progress bar */}
         <div className="mb-6">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex gap-1.5 mb-4">
             {[1, 2, 3, 4].map(s => (
-              <div key={s} className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-all ${step >= s ? 'bg-rose-500 text-white' : 'bg-white text-gray-400'}`}>
+              <div key={s} className={`flex-1 h-1 rounded-full transition-all duration-500 ${step >= s ? 'bg-violet-500' : 'bg-gray-800'}`} />
+            ))}
+          </div>
+          <div className="flex justify-between">
+            {[1, 2, 3, 4].map(s => (
+              <div key={s} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step > s ? 'bg-violet-600 text-white' : step === s ? 'bg-violet-600 text-white ring-4 ring-violet-600/20' : 'bg-gray-800 text-gray-500'}`}>
                 {s}
               </div>
             ))}
           </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-rose-500 to-orange-400 transition-all duration-500" style={{ width: `${((step - 1) / 3) * 100}%` }} />
-          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Card header */}
-          <div className="bg-gradient-to-r from-rose-500 to-orange-400 px-8 py-8 text-white text-center">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <FaPaw className="text-2xl text-white" />
-            </div>
-            <h2 className="text-2xl font-extrabold">{STEP_TITLES[step - 1]}</h2>
-            <p className="mt-1 text-rose-100 text-sm">Step {step} of 4</p>
-          </div>
-
-          <div className="px-8 py-8">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl">
+          <div className="px-6 py-6">
             {errorMessage && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">{errorMessage}</div>
+              <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">{errorMessage}</div>
             )}
             {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-600 text-sm font-medium">{successMessage}</div>
+              <div className="mb-4 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm">{successMessage}</div>
             )}
 
             <form onSubmit={step === 4 ? handleSubmit : nextStep} className="space-y-4">
@@ -273,7 +303,7 @@ const SignUpPage = () => {
                   <div>
                     <label className={labelClass}>Phone</label>
                     <div className="flex gap-2">
-                      <select name="phone_country_code" value={formData.phone_country_code} onChange={handleChange} className="w-28 px-3 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all text-gray-700 text-sm">
+                      <select name="phone_country_code" value={formData.phone_country_code} onChange={handleChange} className="w-28 px-3 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 transition-all">
                         <option value="+420">🇨🇿 +420</option>
                         <option value="+421">🇸🇰 +421</option>
                         <option value="+1">🇺🇸 +1</option>
@@ -404,7 +434,7 @@ const SignUpPage = () => {
                   {/* Location */}
                   <div>
                     <label className={labelClass}>Location</label>
-                    <div className="rounded-2xl overflow-hidden shadow-sm">
+                    <div className="rounded-2xl shadow-sm">
                       <LocationAutocomplete
                         selectProps={{
                           value: address,
@@ -413,7 +443,7 @@ const SignUpPage = () => {
                         }}
                       />
                     </div>
-                    <button type="button" onClick={useCurrentLocation} className="mt-2 flex items-center gap-1 text-xs text-rose-500 font-bold hover:text-rose-600 ml-1">
+                    <button type="button" onClick={useCurrentLocation} className="mt-2 flex items-center gap-1 text-xs text-violet-400 font-bold hover:text-violet-300 ml-1">
                       <FaMapMarkerAlt /> Use my current location
                     </button>
                   </div>
@@ -422,21 +452,21 @@ const SignUpPage = () => {
                   <div>
                     <label className={labelClass}>Profile Pictures (max 10)</label>
                     <div
-                      className="border-2 border-dashed border-rose-200 rounded-2xl p-6 text-center hover:border-rose-400 transition-colors cursor-pointer bg-gray-50"
+                      className="border-2 border-dashed border-gray-700 rounded-2xl p-6 text-center hover:border-violet-500 transition-colors cursor-pointer bg-gray-800/50"
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => { e.preventDefault(); handleFileSelect(Array.from(e.dataTransfer.files)); }}
                       onClick={() => document.getElementById('file-upload').click()}
                     >
                       <input id="file-upload" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => handleFileSelect(Array.from(e.target.files || []))} className="hidden" />
-                      <FaCamera className="text-2xl text-rose-300 mx-auto mb-2" />
-                      <p className="text-sm font-bold text-gray-500">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-400 mt-1">Animal photos only (JPG, PNG, WebP)</p>
+                      <FaCamera className="text-2xl text-violet-400 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-gray-400">Click to upload or drag and drop</p>
+                      <p className="text-xs text-gray-500 mt-1">Animal photos only (JPG, PNG, WebP)</p>
                     </div>
                     {photoError && <p className={errorClass}>{photoError}</p>}
                     {profilePhotoFiles.length > 0 && (
                       <div className="mt-3 grid grid-cols-3 gap-3">
                         {profilePhotoFiles.map((file, idx) => (
-                          <div key={idx} className="relative rounded-xl overflow-hidden bg-gray-100 aspect-square group">
+                          <div key={idx} className="relative rounded-xl overflow-hidden bg-gray-800 aspect-square group">
                             <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
                             <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-2 py-1 text-[10px] font-bold">
                               {photoValidations[file.name]?.status === 'loading' && <span className="text-yellow-300">Validating...</span>}
@@ -453,41 +483,43 @@ const SignUpPage = () => {
                   </div>
 
                   {/* Match Preferences */}
-                  <div className="p-5 bg-rose-50 rounded-2xl border border-rose-100">
-                    <h4 className="text-xs font-black text-rose-600 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                      <FaCog /> Match Preferences
+                  <div className="p-4 bg-violet-500/5 border border-violet-500/20 rounded-2xl">
+                    <h4 className="text-xs font-bold text-violet-400 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                      <FaCog size={11} /> Match Preferences
                     </h4>
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="text-xs font-bold text-rose-500 uppercase tracking-widest">Max Distance</label>
-                          <span className="text-sm font-black text-rose-600 bg-white px-3 py-1 rounded-full shadow-sm">{formData.max_distance} km</span>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Max Distance</label>
+                          <span className="text-sm font-bold text-violet-400 bg-gray-800 px-3 py-1 rounded-full">{formData.max_distance} km</span>
                         </div>
-                        <input type="range" min="1" max="200" value={formData.max_distance} onChange={(e) => setFormData(prev => ({ ...prev, max_distance: parseInt(e.target.value) }))} className="w-full h-2 bg-rose-200 rounded-lg appearance-none cursor-pointer accent-rose-500" />
+                        <input type="range" min="1" max="200" value={formData.max_distance} onChange={(e) => setFormData(prev => ({ ...prev, max_distance: parseInt(e.target.value) }))} className="w-full h-1.5 bg-gray-700 rounded-full appearance-none cursor-pointer accent-violet-500" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs font-bold text-rose-500 uppercase tracking-widest block mb-2">Min Age</label>
-                          <input type="number" min={18} value={formData.min_age} onChange={(e) => setFormData(prev => ({ ...prev, min_age: parseInt(e.target.value) }))} className="w-full px-4 py-2 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 text-gray-700 font-bold shadow-sm" />
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Min Age</label>
+                          <input type="number" min={18} value={formData.min_age} onChange={(e) => setFormData(prev => ({ ...prev, min_age: parseInt(e.target.value) }))} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 transition-all" />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-rose-500 uppercase tracking-widest block mb-2">Max Age</label>
-                          <input type="number" max={100} value={formData.max_age} onChange={(e) => setFormData(prev => ({ ...prev, max_age: parseInt(e.target.value) }))} className="w-full px-4 py-2 bg-white border-0 rounded-xl focus:ring-2 focus:ring-rose-500 text-gray-700 font-bold shadow-sm" />
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Max Age</label>
+                          <input type="number" max={100} value={formData.max_age} onChange={(e) => setFormData(prev => ({ ...prev, max_age: parseInt(e.target.value) }))} className="w-full px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 transition-all" />
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-rose-500 uppercase tracking-widest block mb-2">Preferred Genders</label>
-                        <div className="flex flex-wrap gap-3">
-                          {['male', 'female', 'non_binary', 'other'].map(g => (
-                            <label key={g} className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                              <input type="checkbox" checked={formData.preferred_genders.includes(g)} onChange={(e) => {
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Preferred Genders</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['male', 'female', 'non_binary', 'other'].map(g => {
+                            const selected = formData.preferred_genders.includes(g);
+                            return (
+                              <button key={g} type="button" onClick={() => {
                                 let next = [...formData.preferred_genders];
-                                if (e.target.checked) { if (!next.includes(g)) next.push(g); } else { next = next.filter(x => x !== g); }
+                                if (selected) { next = next.filter(x => x !== g); } else { next.push(g); }
                                 setFormData(prev => ({ ...prev, preferred_genders: next }));
-                              }} className="accent-rose-500 w-4 h-4" />
-                              <span className="capitalize font-medium">{g.replace('_', ' ')}</span>
-                            </label>
-                          ))}
+                              }} className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all capitalize ${selected ? 'bg-violet-600 border-violet-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'}`}>
+                                {g.replace('_', ' ')}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -504,11 +536,11 @@ const SignUpPage = () => {
               {/* Navigation buttons */}
               <div className="flex gap-3 pt-4">
                 {step > 1 && (
-                  <button type="button" onClick={prevStep} className="flex-1 py-3 px-4 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                  <button type="button" onClick={prevStep} className="flex-1 py-3 px-4 border border-gray-700 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm font-bold text-gray-300 transition-all flex items-center justify-center gap-2">
                     <FaChevronLeft /> Back
                   </button>
                 )}
-                <button type="submit" disabled={!!submitStatus} className="flex-1 py-3 px-4 bg-gradient-to-r from-rose-500 to-orange-400 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-2 disabled:opacity-50">
+                <button type="submit" disabled={!!submitStatus} className="flex-1 py-3 px-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50">
                   {submitStatus || (step === 4 ? 'Complete Sign Up' : <><span>Next</span> <FaChevronRight /></>)}
                 </button>
               </div>
@@ -516,7 +548,7 @@ const SignUpPage = () => {
 
             <p className="mt-5 text-center text-sm text-gray-500">
               Already have an account?{' '}
-              <Link to="/login" className="font-bold text-rose-500 hover:text-rose-600">Log in</Link>
+              <Link to="/login" className="font-bold text-violet-400 hover:text-violet-300">Log in</Link>
             </p>
           </div>
         </div>

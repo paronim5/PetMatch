@@ -2,11 +2,30 @@ import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * Free location autocomplete using Nominatim (OpenStreetMap).
- * Drop-in replacement for react-google-places-autocomplete.
- * onChange receives: { label: string, value: { lat, lon, city } }
+ * Searches on every keystroke (debounced 300ms).
+ * Stores { lat, lon, city } — never the full address string.
  */
+
+const getCleanLabel = (item) => {
+  const a = item.address || {};
+  const city = a.city || a.town || a.village || a.municipality || a.county || '';
+  const country = a.country || '';
+  if (city && country) return `${city}, ${country}`;
+  if (city) return city;
+  // fallback: first two comma-parts of display_name
+  return item.display_name.split(',').slice(0, 2).join(',').trim();
+};
+
+const getCity = (item) =>
+  item.address?.city ||
+  item.address?.town ||
+  item.address?.village ||
+  item.address?.municipality ||
+  item.address?.county ||
+  item.display_name.split(',')[0].trim();
+
 const LocationAutocomplete = ({ selectProps = {} }) => {
-  const { value, onChange, placeholder = 'Search for your city...', styles = {} } = selectProps;
+  const { value, onChange, placeholder = 'Search for your city...' } = selectProps;
   const [query, setQuery] = useState(value ? value.label : '');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -14,13 +33,12 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Sync external value changes
+  // Sync external value (e.g. set by "Use my current location")
   useEffect(() => {
-    if (value) setQuery(value.label);
-    else setQuery('');
+    setQuery(value ? value.label : '');
   }, [value]);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click/tap
   useEffect(() => {
     const handler = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -28,12 +46,16 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, []);
 
   const search = (q) => {
     clearTimeout(debounceRef.current);
-    if (!q || q.length < 2) {
+    if (!q || q.trim().length < 2) {
       setResults([]);
       setOpen(false);
       return;
@@ -42,34 +64,39 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=6`,
-          { headers: { 'Accept-Language': 'en', 'User-Agent': 'PetMatch/1.0' } }
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q.trim())}&format=json&addressdetails=1&limit=6`,
+          { headers: { 'Accept-Language': 'en' } }
         );
         const data = await res.json();
         setResults(data);
         setOpen(data.length > 0);
       } catch {
         setResults([]);
+        setOpen(false);
       } finally {
         setLoading(false);
       }
-    }, 350);
+    }, 300);
   };
 
   const handleInput = (e) => {
-    setQuery(e.target.value);
-    search(e.target.value);
-    if (onChange && e.target.value === '') onChange(null);
+    const val = e.target.value;
+    setQuery(val);
+    if (val === '' && onChange) onChange(null);
+    search(val);
+  };
+
+  const handleFocus = () => {
+    if (results.length > 0) {
+      setOpen(true);
+    } else if (query.trim().length >= 2) {
+      search(query);
+    }
   };
 
   const handleSelect = (item) => {
-    const city =
-      item.address?.city ||
-      item.address?.town ||
-      item.address?.village ||
-      item.address?.county ||
-      item.display_name.split(',')[0];
-    const label = item.display_name;
+    const city = getCity(item);
+    const label = getCleanLabel(item);
     setQuery(label);
     setOpen(false);
     setResults([]);
@@ -84,8 +111,9 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
         type="text"
         value={query}
         onChange={handleInput}
-        onFocus={() => results.length > 0 && setOpen(true)}
+        onFocus={handleFocus}
         placeholder={placeholder}
+        autoComplete="off"
         style={{
           width: '100%',
           padding: '14px 16px',
@@ -123,6 +151,7 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
             <li
               key={item.place_id}
               onMouseDown={() => handleSelect(item)}
+              onTouchEnd={(e) => { e.preventDefault(); handleSelect(item); }}
               style={{
                 padding: '10px 16px',
                 cursor: 'pointer',
@@ -133,7 +162,10 @@ const LocationAutocomplete = ({ selectProps = {} }) => {
               onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fff1f2'}
               onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
             >
-              {item.display_name}
+              <span style={{ fontWeight: 600 }}>{getCity(item)}</span>
+              <span style={{ color: '#9ca3af', marginLeft: 6, fontSize: 12 }}>
+                {[item.address?.state, item.address?.country].filter(Boolean).join(', ')}
+              </span>
             </li>
           ))}
         </ul>
