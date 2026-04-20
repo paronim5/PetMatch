@@ -290,15 +290,15 @@ def clean_seed_users(db):
     db.commit()
     print(f"   Removed {len(users)} seed user(s).\n")
 
-def _nullify_soft_fk_for(db, id_subquery_sql, params):
-    """Null out SET NULL foreign keys that may not have been applied in migrations."""
+def _cleanup_fk_for(db, id_subquery_sql, params):
+    """Remove or nullify rows that reference users being deleted."""
     for stmt in [
-        f"UPDATE notifications SET related_user_id = NULL WHERE related_user_id IN ({id_subquery_sql})",
-        f"UPDATE reports SET reporter_id = NULL WHERE reporter_id IN ({id_subquery_sql})",
-        f"UPDATE reports SET reported_id = NULL WHERE reported_id IN ({id_subquery_sql})",
-        f"UPDATE reports SET resolver_id = NULL WHERE resolver_id IN ({id_subquery_sql})",
+        # Delete rows where NOT NULL columns reference the target users
+        f"DELETE FROM reports WHERE reporter_id IN ({id_subquery_sql}) OR reported_id IN ({id_subquery_sql})",
+        f"DELETE FROM notifications WHERE related_user_id IN ({id_subquery_sql})",
+        f"DELETE FROM subscription_events WHERE user_id IN ({id_subquery_sql})",
+        # Nullify nullable FK columns
         f"UPDATE matches SET unmatched_by = NULL WHERE unmatched_by IN ({id_subquery_sql})",
-        f"UPDATE subscription_events SET user_id = NULL WHERE user_id IN ({id_subquery_sql})",
     ]:
         try:
             db.execute(text(stmt), params)
@@ -311,7 +311,7 @@ def wipe_real_users(db):
     print("🗑  Wiping all real (non-seed) users...")
     subq = "SELECT id FROM users WHERE username NOT LIKE :prefix"
     params = {"prefix": f"{SEED_TAG}%"}
-    _nullify_soft_fk_for(db, subq, params)
+    _cleanup_fk_for(db, subq, params)
     result = db.execute(text(f"DELETE FROM users WHERE username NOT LIKE :prefix"), params)
     db.commit()
     print(f"   Removed {result.rowcount} real user(s).\n")
@@ -319,7 +319,7 @@ def wipe_real_users(db):
 def wipe_all_users(db):
     """Delete every user — full reset."""
     print("💣 Wiping ALL users...")
-    _nullify_soft_fk_for(db, "SELECT id FROM users", {})
+    _cleanup_fk_for(db, "SELECT id FROM users", {})
     result = db.execute(text("DELETE FROM users"))
     db.commit()
     print(f"   Removed {result.rowcount} user(s).\n")
