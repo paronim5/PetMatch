@@ -296,7 +296,6 @@ def _cleanup_fk_for(db, id_subquery_sql, params):
         # Delete rows where NOT NULL columns reference the target users
         f"DELETE FROM reports WHERE reporter_id IN ({id_subquery_sql}) OR reported_id IN ({id_subquery_sql})",
         f"DELETE FROM notifications WHERE related_user_id IN ({id_subquery_sql})",
-        f"DELETE FROM subscription_events WHERE user_id IN ({id_subquery_sql})",
         # Nullify nullable FK columns
         f"UPDATE matches SET unmatched_by = NULL WHERE unmatched_by IN ({id_subquery_sql})",
     ]:
