@@ -82,7 +82,8 @@ class LocationBasedMatching(MatchingStrategy):
             self_interest_ids = db.query(UserInterest.interest_id).filter(UserInterest.user_id == user.id).subquery()
             
             # Base query for potential matches
-            distance_expr = func.ST_Distance(UserProfile.location, user.profile.location) if user_has_location else None
+            # Use func.min() wrapper so ST_Distance is a valid aggregate with GROUP BY users.id
+            distance_expr = func.min(func.ST_Distance(UserProfile.location, user.profile.location)) if user_has_location else None
             shared_count_expr = func.count(UserInterest.interest_id)
             
             remaining_limit = limit - len(likers)
