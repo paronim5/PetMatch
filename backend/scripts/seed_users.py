@@ -290,19 +290,36 @@ def clean_seed_users(db):
     db.commit()
     print(f"   Removed {len(users)} seed user(s).\n")
 
+def _nullify_soft_fk_for(db, id_subquery_sql, params):
+    """Null out SET NULL foreign keys that may not have been applied in migrations."""
+    for stmt in [
+        f"UPDATE notifications SET related_user_id = NULL WHERE related_user_id IN ({id_subquery_sql})",
+        f"UPDATE reports SET reporter_id = NULL WHERE reporter_id IN ({id_subquery_sql})",
+        f"UPDATE reports SET reported_id = NULL WHERE reported_id IN ({id_subquery_sql})",
+        f"UPDATE reports SET resolver_id = NULL WHERE resolver_id IN ({id_subquery_sql})",
+        f"UPDATE matches SET unmatched_by = NULL WHERE unmatched_by IN ({id_subquery_sql})",
+        f"UPDATE subscription_events SET user_id = NULL WHERE user_id IN ({id_subquery_sql})",
+    ]:
+        try:
+            db.execute(text(stmt), params)
+        except Exception:
+            db.rollback()
+            raise
+
 def wipe_real_users(db):
     """Delete all non-seed users using raw SQL to respect FK constraints."""
     print("🗑  Wiping all real (non-seed) users...")
-    result = db.execute(text("""
-        DELETE FROM users
-        WHERE username NOT LIKE :prefix
-    """), {"prefix": f"{SEED_TAG}%"})
+    subq = "SELECT id FROM users WHERE username NOT LIKE :prefix"
+    params = {"prefix": f"{SEED_TAG}%"}
+    _nullify_soft_fk_for(db, subq, params)
+    result = db.execute(text(f"DELETE FROM users WHERE username NOT LIKE :prefix"), params)
     db.commit()
     print(f"   Removed {result.rowcount} real user(s).\n")
 
 def wipe_all_users(db):
     """Delete every user — full reset."""
     print("💣 Wiping ALL users...")
+    _nullify_soft_fk_for(db, "SELECT id FROM users", {})
     result = db.execute(text("DELETE FROM users"))
     db.commit()
     print(f"   Removed {result.rowcount} user(s).\n")
