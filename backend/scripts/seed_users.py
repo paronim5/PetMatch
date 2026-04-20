@@ -290,21 +290,21 @@ def clean_seed_users(db):
     print(f"   Removed {len(users)} seed user(s).\n")
 
 def wipe_real_users(db):
-    """Delete all non-seed users (your real test accounts)."""
+    """Delete all non-seed users using raw SQL to respect FK constraints."""
     print("🗑  Wiping all real (non-seed) users...")
-    users = db.query(User).filter(~User.username.like(f"{SEED_TAG}%")).all()
-    for u in users:
-        db.delete(u)
+    result = db.execute(text("""
+        DELETE FROM users
+        WHERE username NOT LIKE :prefix
+    """), {"prefix": f"{SEED_TAG}%"})
     db.commit()
-    print(f"   Removed {len(users)} real user(s).\n")
+    print(f"   Removed {result.rowcount} real user(s).\n")
 
 def wipe_all_users(db):
     """Delete every user — full reset."""
     print("💣 Wiping ALL users...")
-    count = db.query(User).count()
-    db.query(User).delete()
+    result = db.execute(text("DELETE FROM users"))
     db.commit()
-    print(f"   Removed {count} user(s).\n")
+    print(f"   Removed {result.rowcount} user(s).\n")
 
 # ---------------------------------------------------------------------------
 # Seed
