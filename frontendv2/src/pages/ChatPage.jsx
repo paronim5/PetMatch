@@ -5,7 +5,7 @@ import { BlockModal, ReportModal } from '../components/BlockReportModals';
 import BottomNav from '../components/BottomNav';
 import {
   FaFlag, FaBan, FaSmile, FaCheck, FaCheckDouble, FaArrowLeft,
-  FaComments, FaUser, FaPaperPlane, FaPaw, FaUserPlus
+  FaComments, FaHeart, FaUser, FaPaperPlane, FaPaw, FaUserPlus
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
