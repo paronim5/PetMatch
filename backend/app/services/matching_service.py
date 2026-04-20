@@ -108,7 +108,7 @@ class LocationBasedMatching(MatchingStrategy):
                     User.id.notin_(liker_ids_query),            # Exclude likers using standard query
                     User.id.notin_(blocked_ids_query),          # Exclude users I blocked
                     User.id.notin_(blocker_ids_query),          # Exclude users who blocked me
-                ).group_by(User.id, UserProfile.location)
+                ).group_by(User.id)
 
                 # Only apply distance filter when the current user has a location set
                 if user_has_location:

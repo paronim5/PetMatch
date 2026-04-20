@@ -8,6 +8,8 @@ Options:
     --count=120     number of users to create (default 20)
     --photos=2      photos per user (default 2)
     --clean         wipe all seed_mock_ users first, then re-seed
+    --wipe-real     wipe ALL non-seed users (your real test accounts etc.)
+    --wipe-all      wipe EVERY user including seed users (full reset)
 """
 
 import sys
@@ -287,6 +289,23 @@ def clean_seed_users(db):
     db.commit()
     print(f"   Removed {len(users)} seed user(s).\n")
 
+def wipe_real_users(db):
+    """Delete all non-seed users (your real test accounts)."""
+    print("🗑  Wiping all real (non-seed) users...")
+    users = db.query(User).filter(~User.username.like(f"{SEED_TAG}%")).all()
+    for u in users:
+        db.delete(u)
+    db.commit()
+    print(f"   Removed {len(users)} real user(s).\n")
+
+def wipe_all_users(db):
+    """Delete every user — full reset."""
+    print("💣 Wiping ALL users...")
+    count = db.query(User).count()
+    db.query(User).delete()
+    db.commit()
+    print(f"   Removed {count} user(s).\n")
+
 # ---------------------------------------------------------------------------
 # Seed
 # ---------------------------------------------------------------------------
@@ -391,14 +410,20 @@ def seed(db, count: int = 20, photos_per_user: int = 2):
 
 
 if __name__ == "__main__":
-    args  = sys.argv[1:]
-    clean = "--clean" in args
-    count = next((int(a.split("=")[1]) for a in args if a.startswith("--count=")),  20)
-    photos = next((int(a.split("=")[1]) for a in args if a.startswith("--photos=")), 2)
+    args       = sys.argv[1:]
+    clean      = "--clean"      in args
+    wipe_real  = "--wipe-real"  in args
+    wipe_all   = "--wipe-all"   in args
+    count      = next((int(a.split("=")[1]) for a in args if a.startswith("--count=")),  20)
+    photos     = next((int(a.split("=")[1]) for a in args if a.startswith("--photos=")), 2)
 
     db = SessionLocal()
     try:
-        if clean:
+        if wipe_all:
+            wipe_all_users(db)
+        elif wipe_real:
+            wipe_real_users(db)
+        elif clean:
             clean_seed_users(db)
         seed(db, count=count, photos_per_user=photos)
     finally:
