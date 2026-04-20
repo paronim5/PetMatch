@@ -4,11 +4,12 @@ import { userService } from '../services/user';
 import { subscriptionService } from '../services/subscription';
 import { useNotification } from '../context/useNotification';
 import { validateImage } from '../utils/imageValidation';
+import BottomNav from '../components/BottomNav';
 import {
-  FaTrash, FaPlus, FaCamera, FaMapMarkerAlt, FaRulerVertical,
-  FaGraduationCap, FaBriefcase, FaSignOutAlt, FaUserTimes, FaShieldAlt,
+  FaTrash, FaPlus, FaCamera, FaMapMarkerAlt,
+  FaSignOutAlt, FaUserTimes, FaShieldAlt,
   FaCrown, FaPlay, FaCheckCircle, FaTimesCircle, FaPencilAlt, FaSave,
-  FaTimes, FaFire, FaComments, FaHeart, FaUser, FaPaw, FaBell
+  FaTimes, FaUser, FaPaw, FaBell
 } from 'react-icons/fa';
 
 class PhotoSectionErrorBoundary extends React.Component {
@@ -24,31 +25,6 @@ class PhotoSectionErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
-
-const BottomNav = () => {
-  const { pathname } = useLocation();
-  const links = [
-    { to: '/matching', icon: FaFire, label: 'Discover' },
-    { to: '/chat', icon: FaComments, label: 'Chat' },
-    { to: '/history', icon: FaHeart, label: 'Likes' },
-    { to: '/profile', icon: FaUser, label: 'Profile' },
-  ];
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-30">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
-        {links.map(({ to, icon: Icon, label }) => {
-          const active = pathname === to;
-          return (
-            <Link key={to} to={to} className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all ${active ? 'text-violet-400' : 'text-gray-500 hover:text-gray-300'}`}>
-              <Icon size={active ? 22 : 20} />
-              <span className="text-[10px] font-medium">{label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-};
 
 const inputCls = 'w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 transition-all';
 const labelCls = 'block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5';
@@ -416,7 +392,9 @@ const ProfilePage = () => {
                           <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 text-[10px] font-bold">
                             {photoValidations[file.name]?.status === 'loading' && <span className="text-yellow-300">Validating...</span>}
                             {photoValidations[file.name]?.status === 'success' && <span className="text-green-400">Valid</span>}
-                            {photoValidations[file.name]?.status === 'error' && <span className="text-red-400">Invalid</span>}
+                            {photoValidations[file.name]?.status === 'error' && (
+                              <span className="text-red-400 leading-tight">{photoValidations[file.name]?.message || 'Invalid'}</span>
+                            )}
                           </div>
                           <button type="button" onClick={() => removePendingPhoto(idx)} className="absolute top-1.5 right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-400 transition-all">
                             <FaTimes size={8} />
@@ -531,23 +509,18 @@ const ProfilePage = () => {
               {/* Location */}
               <div className="p-4 bg-violet-500/5 border border-violet-500/20 rounded-xl space-y-3">
                 <h4 className="text-violet-400 text-xs font-bold uppercase tracking-widest flex items-center gap-1.5"><FaMapMarkerAlt size={11} /> Location</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-1">
-                    <label className={labelCls}>City</label>
-                    <input type="text" name="location_city" value={profileData.location_city} onChange={handleChange} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Latitude</label>
-                    <input type="number" step="any" name="latitude" value={profileData.latitude} onChange={handleChange} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Longitude</label>
-                    <input type="number" step="any" name="longitude" value={profileData.longitude} onChange={handleChange} className={inputCls} />
-                  </div>
+                <div>
+                  <label className={labelCls}>City</label>
+                  <input type="text" name="location_city" value={profileData.location_city} onChange={handleChange} className={inputCls} placeholder="e.g. Prague" />
                 </div>
-                <button type="button" onClick={useCurrentLocation} className="text-violet-400 hover:text-violet-300 text-xs font-semibold flex items-center gap-1 transition-colors">
-                  <FaMapMarkerAlt size={10} /> Use my current location
+                <button type="button" onClick={useCurrentLocation} className="flex items-center gap-1.5 px-3 py-2 bg-violet-600/10 hover:bg-violet-600/20 border border-violet-500/20 text-violet-400 hover:text-violet-300 text-xs font-semibold rounded-xl transition-all">
+                  <FaMapMarkerAlt size={10} /> Detect my location automatically
                 </button>
+                {profileData.latitude && profileData.longitude && (
+                  <p className="text-green-400 text-xs flex items-center gap-1">
+                    <FaCheckCircle size={10} /> Location coordinates detected
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-2 justify-end pt-2">
@@ -663,7 +636,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Danger Zone */}
-        <div className={`${cardCls} border-red-500/20`}>
+        <div className="bg-gray-900 border border-red-500/20 rounded-2xl p-5">
           <h3 className="font-bold text-red-400 mb-3 text-sm uppercase tracking-wider">Danger Zone</h3>
           <button
             onClick={async () => {

@@ -47,13 +47,18 @@ const LoginPage = () => {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950 p-4">
-      {/* Subtle background glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
-      </div>
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: "url('/PetMatchBackgroundLogin.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* Dark overlay so the form stays readable */}
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
 
-      <div className="w-full max-w-md relative">
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-violet-600 rounded-2xl mb-4 shadow-lg shadow-violet-600/30">
@@ -108,10 +113,20 @@ const LoginPage = () => {
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-xs text-violet-400 hover:text-violet-300 transition-colors font-medium"
+                onClick={() => {}}
+              >
+                Forgot password?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

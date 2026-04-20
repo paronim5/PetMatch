@@ -2,38 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../config';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
+import BottomNav from '../components/BottomNav';
 import {
   FaFlag, FaBan, FaSmile, FaCheck, FaCheckDouble, FaArrowLeft,
-  FaFire, FaComments, FaHeart, FaUser, FaPaperPlane, FaPaw
+  FaComments, FaUser, FaPaperPlane, FaPaw, FaUserPlus
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
-
-const BottomNav = () => {
-  const { pathname } = useLocation();
-  const links = [
-    { to: '/matching', icon: FaFire, label: 'Discover' },
-    { to: '/chat', icon: FaComments, label: 'Chat' },
-    { to: '/history', icon: FaHeart, label: 'Likes' },
-    { to: '/profile', icon: FaUser, label: 'Profile' },
-  ];
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-30">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
-        {links.map(({ to, icon: Icon, label }) => {
-          const active = pathname === to;
-          return (
-            <Link key={to} to={to} className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-all ${active ? 'text-violet-400' : 'text-gray-500 hover:text-gray-300'}`}>
-              <Icon size={active ? 22 : 20} />
-              <span className="text-[10px] font-medium">{label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-};
 
 const ChatPage = () => {
   const [matches, setMatches] = useState([]);
@@ -182,21 +158,12 @@ const ChatPage = () => {
     const token = getToken();
     try {
       const trimmed = joinCode.trim();
-      let res;
-      if (trimmed.toLowerCase().startsWith('@username ')) {
-        const username = trimmed.substring('@username '.length).trim();
-        res = await fetch(`${API_URL}/chat/join-by-username`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ username })
-        });
-      } else {
-        res = await fetch(`${API_URL}/chat/join`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ code: joinCode })
-        });
-      }
+      if (!trimmed) return;
+      const res = await fetch(`${API_URL}/chat/join-by-username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ username: trimmed })
+      });
       if (res.ok) {
         const match = await res.json();
         setJoinCode('');
@@ -259,18 +226,21 @@ const ChatPage = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <div className={`w-full md:w-80 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 ${selectedMatch ? 'hidden md:flex' : 'flex'}`}>
-          {/* Join chat */}
+          {/* Add by username */}
           <div className="p-4 border-b border-gray-800">
+            <p className="text-xs text-gray-500 font-medium mb-2 flex items-center gap-1.5">
+              <FaUserPlus size={10} /> Start a conversation
+            </p>
             <form onSubmit={handleJoinChat} className="flex gap-2">
               <input
                 type="text"
-                placeholder="@username name"
+                placeholder="Enter username"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
                 className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-all"
               />
               <button type="submit" className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-semibold transition-all">
-                Join
+                Add
               </button>
             </form>
           </div>
@@ -302,7 +272,7 @@ const ChatPage = () => {
                   )}
                   <div className="min-w-0">
                     <p className={`font-semibold truncate ${isActive ? 'text-violet-300' : 'text-white'}`}>{partner.name}</p>
-                    <p className="text-gray-500 text-xs truncate">Tap to chat</p>
+                    <p className="text-gray-600 text-xs truncate">New match!</p>
                   </div>
                 </div>
               );

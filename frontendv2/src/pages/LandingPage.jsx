@@ -8,15 +8,18 @@ import PretextCatText from '../components/PretextCatText';
 const CatScene = lazy(() => import('../components/CatScene'));
 
 const MOBILE_BREAKPOINT = 768;
-const SCROLL_DURATION = 2000;
+const SCROLL_DURATION   = 2000;
+const LERP_SPEED        = 0.055;
+const ADVANCE_STEP      = 0.28;
+const UNLOCK_AT         = 0.60;
 
 const CONFIG = {
   mobile: {
     bgPath: '/landingpagebg864x1184.png',
-    parallaxScrollFactor: 100,
+    parallaxScrollFactor: 0,
     catPath: {
       start: new THREE.Vector3(0, -0.5, -25),
-      end: new THREE.Vector3(0, -5.5, 5),
+      end:   new THREE.Vector3(0, -5.5, 5),
     },
   },
   desktop: {
@@ -24,23 +27,29 @@ const CONFIG = {
     parallaxScrollFactor: 0,
     catPath: {
       start: new THREE.Vector3(0, -1.5, -13),
-      end: new THREE.Vector3(0, -5, 12),
+      end:   new THREE.Vector3(0, -5,   12),
     },
   },
 };
 
 const LandingPage = () => {
   const navigate = useNavigate();
+
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [typingText, setTypingText] = useState('');
-  const [typingIndex, setTypingIndex] = useState(0);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
-  const [bgShouldLoad, setBgShouldLoad] = useState(false);
-  const [bgLoaded, setBgLoaded] = useState(false);
-  const [showScene, setShowScene] = useState(false);
-  const [fadeOutAt, setFadeOutAt] = useState(0.62);
-  const heroRef = useRef(null);
-  const statsRef = useRef(null);
+  const [scrollLocked,   setScrollLocked]   = useState(() => window.innerWidth >= MOBILE_BREAKPOINT);
+  const [typingText,     setTypingText]     = useState('');
+  const [typingIndex,    setTypingIndex]    = useState(0);
+  const [isMobile,       setIsMobile]       = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const [bgShouldLoad,   setBgShouldLoad]   = useState(false);
+  const [bgLoaded,       setBgLoaded]       = useState(false);
+  const [showScene,      setShowScene]      = useState(false);
+  const [fadeOutAt,      setFadeOutAt]      = useState(0.62);
+
+  const heroRef            = useRef(null);
+  const statsRef           = useRef(null);
+  const scrollProgressRef  = useRef(0);
+  const animRafRef         = useRef(null);
+  const unlockTimerRef     = useRef(null);
 
   const messages = [
     'Find your perfect pet companion.',
@@ -53,7 +62,10 @@ const LandingPage = () => {
     let timer;
     const handleResize = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT), 150);
+      timer = setTimeout(() => {
+        const mobile = window.innerWidth < MOBILE_BREAKPOINT;
+        setIsMobile(mobile);
+      }, 150);
     };
     handleResize();
     window.addEventListener('resize', handleResize, { passive: true });
@@ -73,22 +85,65 @@ const LandingPage = () => {
     return () => clearInterval(interval);
   }, [typingIndex]);
 
-  // RAF-throttled passive scroll
+  // Scroll tracking / locking
   useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const h = document.documentElement.scrollHeight - window.innerHeight;
-          setScrollProgress(Math.min(Math.max(window.scrollY / h, 0), 1));
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    if (isMobile) {
+      // Mobile: always free scroll
+      let ticking = false;
+      const onScroll = () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            const h = document.documentElement.scrollHeight - window.innerHeight;
+            setScrollProgress(Math.min(Math.max(window.scrollY / h, 0), 1));
+            ticking = false;
+          });
+          ticking = true;
+        }
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return () => window.removeEventListener('scroll', onScroll);
+    }
+
+    if (!scrollLocked) {
+      // Desktop unlocked: normal scroll tracking
+      document.body.style.overflow = '';
+      let ticking = false;
+      const onScroll = () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            const h = document.documentElement.scrollHeight - window.innerHeight;
+            setScrollProgress(Math.min(Math.max(window.scrollY / h, 0), 1));
+            ticking = false;
+          });
+          ticking = true;
+        }
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return () => window.removeEventListener('scroll', onScroll);
+    }
+
+    // Desktop locked: block native scroll; animation driven by animateToProgress()
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobile, scrollLocked]);
+
+  // Cleanup on unmount
+  useEffect(() => () => {
+    document.body.style.overflow = '';
+    if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+    if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
   }, []);
+
+  const unlockScroll = () => {
+    if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+    // Restore overflow before scrollTo so the call takes effect
+    document.body.style.overflow = '';
+    const totalScrollable = document.documentElement.scrollHeight - window.innerHeight;
+    if (totalScrollable > 0) {
+      window.scrollTo(0, scrollProgressRef.current * totalScrollable);
+    }
+    setScrollLocked(false);
+  };
 
   // IntersectionObserver to trigger bg + 3D load
   useEffect(() => {
@@ -101,13 +156,12 @@ const LandingPage = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Recalculate fade-out threshold whenever the stats section position changes (e.g. on resize)
+  // Fade-out threshold for floating boxes
   useEffect(() => {
     const update = () => {
       if (!statsRef.current) return;
       const totalScrollable = document.documentElement.scrollHeight - window.innerHeight;
       if (totalScrollable <= 0) return;
-      // Start fading boxes out 80px before the stats section enters the viewport
       const threshold = (statsRef.current.offsetTop - window.innerHeight - 80) / totalScrollable;
       setFadeOutAt(Math.max(0.3, Math.min(0.75, threshold)));
     };
@@ -116,28 +170,54 @@ const LandingPage = () => {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  const easeInOutQuad = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  const easeInOutCubic = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+  const easeInOutQuad  = t => t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+
+  const animateToProgress = (targetSP, duration) => {
+    if (animRafRef.current) cancelAnimationFrame(animRafRef.current);
+    const startSP = scrollProgressRef.current;
+    const t0 = performance.now();
+    const step = (now) => {
+      const t   = Math.min((now - t0) / duration, 1);
+      const val = startSP + (targetSP - startSP) * easeInOutCubic(t);
+      scrollProgressRef.current = val;
+      setScrollProgress(val);
+      if (t < 1) animRafRef.current = requestAnimationFrame(step);
+      else animRafRef.current = null;
+    };
+    animRafRef.current = requestAnimationFrame(step);
+  };
 
   const scrollToSection = () => {
-    // Scroll to ~38% of total scrollable height — center of the floating boxes zone
+    if (isMobile) {
+      window.scrollBy({ top: window.innerHeight * 0.88, behavior: 'smooth' });
+      return;
+    }
+    if (scrollLocked) {
+      animateToProgress(0.32, 4000);
+      if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+      unlockTimerRef.current = setTimeout(unlockScroll, 4200);
+      return;
+    }
     const totalScrollable = document.documentElement.scrollHeight - window.innerHeight;
     const target = totalScrollable * 0.38;
-    const start = window.scrollY;
-    const t0 = performance.now();
-    const animate = now => {
+    const start  = window.scrollY;
+    const t0     = performance.now();
+    const anim = now => {
       const p = Math.min((now - t0) / SCROLL_DURATION, 1);
       window.scrollTo(0, start + (target - start) * easeInOutQuad(p));
-      if (p < 1) requestAnimationFrame(animate);
+      if (p < 1) requestAnimationFrame(anim);
     };
-    requestAnimationFrame(animate);
+    requestAnimationFrame(anim);
   };
 
   const parallaxTransform = isMobile
     ? `translateY(-${scrollProgress * currentConfig.parallaxScrollFactor}px)`
     : 'translateY(0)';
 
+
   return (
-    <div className="relative" style={{ minHeight: '300vh' }}>
+    <div className="relative overflow-x-hidden" style={{ minHeight: isMobile ? 'auto' : '300vh' }}>
 
       {/* Scroll progress bar */}
       <div className="fixed top-0 left-0 w-full h-[3px] z-50">
@@ -149,7 +229,7 @@ const LandingPage = () => {
 
       {/* Background */}
       <div
-        className={`fixed top-0 left-0 w-full ${isMobile ? 'h-[150vh]' : 'h-full'}`}
+        className="fixed top-0 left-0 w-full h-full"
         style={{
           backgroundImage: bgShouldLoad
             ? `url('${currentConfig.bgPath}')`
@@ -170,12 +250,8 @@ const LandingPage = () => {
           onLoad={() => setBgLoaded(true)} />
       )}
 
-      {/* Pretext scroll text — renders behind cat; cat punches hole through it */}
-      {showScene && (
-        <PretextCatText scrollProgress={scrollProgress} isMobile={isMobile} />
-      )}
+      {showScene && <PretextCatText scrollProgress={scrollProgress} isMobile={isMobile} />}
 
-      {/* 3D Cat — lazy loaded, renders on top of PretextCatText */}
       {showScene && (
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
           <Suspense fallback={null}>
@@ -190,7 +266,11 @@ const LandingPage = () => {
         </div>
       )}
 
-      <FloatingBoxes scrollProgress={scrollProgress} isMobile={isMobile} fadeOutAt={fadeOutAt} />
+      {!isMobile && (
+        <FloatingBoxes scrollProgress={scrollProgress} isMobile={false} fadeOutAt={fadeOutAt} />
+      )}
+
+      {/* ── Scroll advance button (desktop locked, animation playing) ── */}
 
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 p-4 md:p-6 z-30 flex justify-between items-center">
@@ -216,9 +296,16 @@ const LandingPage = () => {
       </header>
 
       {/* Hero */}
-      <section ref={heroRef} className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10">
+      <section
+        ref={heroRef}
+        className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative z-10"
+        style={{
+          opacity:    Math.max(0, 1 - Math.max(0, scrollProgress - 0.05) / 0.13),
+          transform:  `translateY(-${Math.min(80, Math.max(0, scrollProgress - 0.05) / 0.13 * 80)}px)`,
+          pointerEvents: scrollProgress > 0.15 ? 'none' : 'auto',
+        }}
+      >
         <div className="max-w-3xl mx-auto px-3 sm:px-4">
-          {/* Glassmorphism card */}
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-5 sm:p-8 md:p-14 shadow-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-300 text-xs font-bold uppercase tracking-widest mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
@@ -229,10 +316,7 @@ const LandingPage = () => {
               <p className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight mb-1">
                 Welcome to
               </p>
-              <PretextTitle
-                text="PetMatch"
-                fontSize={isMobile ? 48 : 76}
-              />
+              <PretextTitle text="PetMatch" fontSize={isMobile ? 48 : 76} />
             </div>
 
             <p className="text-lg md:text-xl text-white/70 mb-10 h-8 flex items-center justify-center">
@@ -256,12 +340,11 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Stats row */}
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6">
             {[
               { value: '10K+', label: 'Happy Matches' },
               { value: '500+', label: 'Shelters' },
-              { value: '98%', label: 'Satisfaction' },
+              { value: '98%',  label: 'Satisfaction' },
             ].map((s, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2 sm:p-4">
                 <div className="text-lg sm:text-2xl md:text-3xl font-black text-white">{s.value}</div>
@@ -272,9 +355,10 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <div id="floating-boxes-start" className="h-[200vh]" />
+      {isMobile && <FloatingBoxes scrollProgress={scrollProgress} isMobile={true} />}
+      {!isMobile && <div className="h-[200vh]" />}
 
-      {/* Stats section */}
+      {/* Stats */}
       <section ref={statsRef} className="relative z-10 py-20 px-4 bg-gray-950">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
@@ -291,10 +375,10 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { value: '50K+', label: 'Pet Lovers', icon: '🐾', sub: 'and growing daily' },
-              { value: '95%', label: 'Match Rate', icon: '💘', sub: 'successful connections' },
-              { value: '200+', label: 'Cities', icon: '📍', sub: 'across the country' },
-              { value: '4.8★', label: 'App Rating', icon: '⭐', sub: 'from happy users' },
+              { value: '50K+', label: 'Pet Lovers',  icon: '🐾', sub: 'and growing daily' },
+              { value: '95%',  label: 'Match Rate',  icon: '💘', sub: 'successful connections' },
+              { value: '200+', label: 'Cities',      icon: '📍', sub: 'across the country' },
+              { value: '4.8★', label: 'App Rating',  icon: '⭐', sub: 'from happy users' },
             ].map((s, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center hover:-translate-y-1 transition-all duration-300">
                 <div className="text-4xl mb-3">{s.icon}</div>
@@ -305,7 +389,6 @@ const LandingPage = () => {
             ))}
           </div>
 
-          {/* Testimonial strip */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
               { quote: 'Met my best friend because we both have golden retrievers. PetMatch just gets it.', name: 'Tereza K.', pet: '🐕 Golden Retriever owner' },
@@ -341,32 +424,11 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              {
-                icon: '🏠',
-                title: 'Find Your Match',
-                desc: 'Browse thousands of adorable pets waiting for loving homes.',
-                accent: 'from-violet-500/20 to-violet-500/5',
-                border: 'border-violet-500/20',
-              },
-              {
-                icon: '❤️',
-                title: 'Safe & Secure',
-                desc: 'Verified shelters and a responsible, AI-powered adoption process.',
-                accent: 'from-purple-500/20 to-purple-500/5',
-                border: 'border-purple-500/20',
-              },
-              {
-                icon: '🎉',
-                title: 'Support Network',
-                desc: 'Connect with experienced pet owners and get expert advice.',
-                accent: 'from-indigo-500/20 to-indigo-500/5',
-                border: 'border-indigo-500/20',
-              },
+              { icon: '🏠', title: 'Find Your Match',   desc: 'Browse thousands of adorable pets waiting for loving homes.',                  accent: 'from-violet-500/20 to-violet-500/5', border: 'border-violet-500/20' },
+              { icon: '❤️', title: 'Safe & Secure',     desc: 'Verified shelters and a responsible, AI-powered adoption process.',             accent: 'from-purple-500/20 to-purple-500/5', border: 'border-purple-500/20' },
+              { icon: '🎉', title: 'Support Network',   desc: 'Connect with experienced pet owners and get expert advice.',                    accent: 'from-indigo-500/20 to-indigo-500/5', border: 'border-indigo-500/20' },
             ].map((f, i) => (
-              <div
-                key={i}
-                className={`bg-gradient-to-b ${f.accent} border ${f.border} rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300`}
-              >
+              <div key={i} className={`bg-gradient-to-b ${f.accent} border ${f.border} rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300`}>
                 <div className="text-5xl mb-5">{f.icon}</div>
                 <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
                 <p className="text-white/50 leading-relaxed">{f.desc}</p>
@@ -392,7 +454,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="relative z-10 bg-gray-950 text-white/40 py-10 text-center text-sm">
-        <p>&copy; 2024 PetMatch. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} PetMatch. All rights reserved.</p>
       </footer>
     </div>
   );

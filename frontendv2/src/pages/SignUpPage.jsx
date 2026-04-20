@@ -245,13 +245,17 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 py-8 px-4">
-      {/* bg glow */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-violet-600/8 rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-lg mx-auto relative">
+    <div
+      className="min-h-screen py-8 px-4 relative"
+      style={{
+        backgroundImage: "url('/PetMatchBackgroundLogin.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
+      <div className="max-w-lg mx-auto relative z-10">
         {/* Logo + title */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-violet-600 rounded-2xl mb-3 shadow-lg shadow-violet-600/30">
@@ -471,7 +475,9 @@ const SignUpPage = () => {
                             <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-2 py-1 text-[10px] font-bold">
                               {photoValidations[file.name]?.status === 'loading' && <span className="text-yellow-300">Validating...</span>}
                               {photoValidations[file.name]?.status === 'success' && <span className="text-green-300">Valid</span>}
-                              {photoValidations[file.name]?.status === 'error' && <span className="text-red-300">Invalid</span>}
+                              {photoValidations[file.name]?.status === 'error' && (
+                                <span className="text-red-300 leading-tight">{photoValidations[file.name]?.message || 'Invalid'}</span>
+                              )}
                             </div>
                             <button type="button" onClick={(e) => { e.stopPropagation(); removePhoto(idx); }} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center hover:bg-red-600 transition-all text-xs">
                               &times;
