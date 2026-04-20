@@ -25,6 +25,7 @@ from itertools import product
 
 sys.path.insert(0, "/app")
 
+from sqlalchemy import text
 from app.infrastructure.database import db as _db
 SessionLocal = _db.SessionLocal
 
