@@ -334,13 +334,13 @@ def seed(db, count: int = 20, photos_per_user: int = 2):
     for u in generate_user_pool(count):
         base = f"{to_ascii(u['first'])}_{to_ascii(u['surname'])[:6]}"
         username = f"{SEED_TAG}{base}"
-        email    = f"{username}@petmatch.test"
+        email    = f"{username}@example.com"
 
         # Make username unique if collision
         suffix = 1
         while db.query(User).filter(User.username == username).first():
             username = f"{SEED_TAG}{base}_{suffix}"
-            email    = f"{username}@petmatch.test"
+            email    = f"{username}@example.com"
             suffix  += 1
             if suffix > 9:
                 skipped += 1
