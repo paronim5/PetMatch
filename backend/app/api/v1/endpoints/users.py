@@ -569,6 +569,20 @@ def get_my_icebreaker_answers(db: Session = Depends(deps.get_db), current_user: 
         for a, p in answers
     ]
 
+@router.get("/{user_id}/icebreaker-answers", response_model=List[IcebreakerAnswerOut])
+def get_user_icebreaker_answers(user_id: int, db: Session = Depends(deps.get_db), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
+    """Return another user's icebreaker answers."""
+    answers = db.query(UserIcebreakerAnswerModel, IcebreakerPromptModel).join(
+        IcebreakerPromptModel, UserIcebreakerAnswerModel.prompt_id == IcebreakerPromptModel.id
+    ).filter(UserIcebreakerAnswerModel.user_id == user_id).order_by(UserIcebreakerAnswerModel.display_order).all()
+    return [
+        IcebreakerAnswerOut(
+            id=a.id, prompt_id=a.prompt_id, prompt_text=p.prompt_text,
+            answer_text=a.answer_text, display_order=a.display_order
+        )
+        for a, p in answers
+    ]
+
 @router.post("/me/icebreaker-answers", response_model=List[IcebreakerAnswerOut])
 def save_icebreaker_answers(
     answers_in: List[IcebreakerAnswerIn],

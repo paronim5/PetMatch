@@ -27,6 +27,8 @@ const ChatPage = () => {
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const navigate = useNavigate();
 
+  const [partnerIcebreakers, setPartnerIcebreakers] = useState([]);
+
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
@@ -235,6 +237,12 @@ const ChatPage = () => {
       sessionStorage.setItem('lastSelectedMatchId', selectedMatch.id.toString());
       fetchMessages(selectedMatch.id);
       markRead(selectedMatch.id);
+      const partnerId = selectedMatch.user1_id === currentUserId ? selectedMatch.user2_id : selectedMatch.user1_id;
+      const token = getToken();
+      fetch(`${API_URL}/users/${partnerId}/icebreaker-answers`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : [])
+        .then(setPartnerIcebreakers)
+        .catch(() => setPartnerIcebreakers([]));
       const interval = setInterval(() => {
         const token = getToken();
         if (!token) return;
@@ -365,14 +373,44 @@ const ChatPage = () => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollContainerRef} onScroll={handleScroll}>
+              <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 space-y-2" ref={scrollContainerRef} onScroll={handleScroll}>
+                {/* Icebreaker prompts */}
+                {partnerIcebreakers.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    {partnerIcebreakers.map(ib => (
+                      <div key={ib.id} className="bg-gray-800/60 border border-violet-500/20 rounded-2xl px-4 py-3">
+                        <p className="text-violet-400 text-xs font-semibold mb-1">{ib.prompt_text}</p>
+                        <p className="text-gray-200 text-sm md:text-base">{ib.answer_text}</p>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 my-3">
+                      <div className="flex-1 h-px bg-gray-800" />
+                      <span className="text-gray-600 text-xs">Messages</span>
+                      <div className="flex-1 h-px bg-gray-800" />
+                    </div>
+                  </div>
+                )}
                 {messages.map((msg) => {
                   const isMine = msg.sender_id === currentUserId;
                   const isDeleted = !!msg.deleted_at;
+                  const partner = getPartnerDetails(selectedMatch);
                   return (
-                    <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                    <div key={msg.id} className={`flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                      {/* Partner avatar on the left */}
+                      {!isMine && (
+                        <div className="flex-shrink-0 mb-1">
+                          {partner.photo ? (
+                            <img src={partner.photo} alt={partner.name} className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover ring-1 ring-gray-700" />
+                          ) : (
+                            <div className="w-7 h-7 md:w-8 md:h-8 bg-gray-700 rounded-full flex items-center justify-center text-gray-400 text-xs font-bold">
+                              {partner.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div
-                        className="relative group max-w-xs lg:max-w-sm"
+                        className="relative group max-w-[70%] md:max-w-[55%]"
                         onMouseDown={() => isMine && !isDeleted && startLongPress(msg.id)}
                         onMouseUp={cancelLongPress}
                         onMouseLeave={cancelLongPress}
@@ -387,8 +425,8 @@ const ChatPage = () => {
                             <button onClick={() => setLongPressedMessageId(null)} className="text-gray-400 hover:text-gray-300 text-xs">Cancel</button>
                           </div>
                         )}
-                        <div className={`px-4 py-2.5 rounded-2xl ${isMine ? 'bg-violet-600 text-white rounded-br-sm' : 'bg-gray-800 text-gray-100 rounded-bl-sm'} ${isDeleted ? 'opacity-50' : ''}`}>
-                          <p className="text-sm leading-relaxed">{isDeleted ? <span className="italic text-gray-400">This message was deleted</span> : msg.message_text}</p>
+                        <div className={`px-4 py-2.5 md:px-5 md:py-3 rounded-2xl ${isMine ? 'bg-violet-600 text-white rounded-br-sm' : 'bg-gray-800 text-gray-100 rounded-bl-sm'} ${isDeleted ? 'opacity-50' : ''}`}>
+                          <p className="text-sm md:text-base leading-relaxed">{isDeleted ? <span className="italic text-gray-400">This message was deleted</span> : msg.message_text}</p>
                           <div className={`flex items-center gap-1 mt-1 text-xs ${isMine ? 'text-violet-200 justify-end' : 'text-gray-500'}`}>
                             <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             {isMine && (
@@ -426,6 +464,9 @@ const ChatPage = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Spacer on right for partner messages to keep them left-aligned */}
+                      {!isMine && <div className="flex-shrink-0 w-7 md:w-8" />}
                     </div>
                   );
                 })}
@@ -433,14 +474,14 @@ const ChatPage = () => {
               </div>
 
               {/* Input */}
-              <div className="px-4 py-3 bg-gray-900 border-t border-gray-800 flex-shrink-0">
+              <div className="px-4 md:px-8 py-3 md:py-4 bg-gray-900 border-t border-gray-800 flex-shrink-0">
                 <form onSubmit={sendMessage} className="flex gap-2 items-center">
                   <input
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 text-sm transition-all"
+                    className="flex-1 px-4 py-2.5 md:py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 text-sm md:text-base transition-all"
                   />
                   <button
                     type="submit"
