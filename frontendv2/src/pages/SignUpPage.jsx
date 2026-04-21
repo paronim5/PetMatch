@@ -237,8 +237,12 @@ const SignUpPage = () => {
       navigate('/matching');
     } catch (error) {
       const msg = error.message || '';
-      if (msg.includes('already exists')) { setErrorMessage('This email is already registered. Please log in instead.'); navigate('/login'); }
-      else setErrorMessage(msg || 'Registration failed. Please try again.');
+      if (msg.toLowerCase().includes('email already') || msg.toLowerCase().includes('email is already')) {
+        setErrorMessage('This email is already registered. Please log in instead.');
+        navigate('/login');
+      } else {
+        setErrorMessage(msg || 'Registration failed. Please try again.');
+      }
     } finally {
       setSubmitStatus('');
     }

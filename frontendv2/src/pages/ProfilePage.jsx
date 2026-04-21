@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { userService } from '../services/user';
+import IcebreakerSection from '../components/IcebreakerSection';
 import { subscriptionService } from '../services/subscription';
 import { useNotification } from '../context/useNotification';
 import { validateImage } from '../utils/imageValidation';
@@ -30,6 +31,65 @@ class PhotoSectionErrorBoundary extends React.Component {
 const inputCls = 'w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-violet-500 transition-all';
 const labelCls = 'block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5';
 const cardCls = 'bg-gray-900 border border-gray-800 rounded-2xl p-5';
+
+const AccountSection = ({ user, addToast, cardCls }) => {
+  const [username, setUsername] = useState(user?.username || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setUsername(user?.username || '');
+    setEmail(user?.email || '');
+  }, [user]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await userService.updateAccount({ username, email });
+      addToast('Account updated.', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to update account.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={cardCls}>
+      <h3 className="font-bold text-white flex items-center gap-2 mb-4">
+        <FaUser className="text-violet-400" size={14} /> Account
+      </h3>
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Username</label>
+          <input
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 transition-all"
+            placeholder="yourname"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 transition-all"
+            placeholder="you@example.com"
+          />
+        </div>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Account'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -558,6 +618,9 @@ const ProfilePage = () => {
           )}
         </div>
 
+        {/* Icebreaker Prompts */}
+        <IcebreakerSection />
+
         {/* Match Preferences */}
         <div className={cardCls}>
           <div className="flex justify-between items-center mb-4">
@@ -635,6 +698,9 @@ const ProfilePage = () => {
             Save Notification Settings
           </button>
         </div>
+
+        {/* Account Settings */}
+        <AccountSection user={user} addToast={addToast} cardCls={cardCls} />
 
         {/* Danger Zone */}
         <div className="bg-gray-900 border border-red-500/20 rounded-2xl p-5">

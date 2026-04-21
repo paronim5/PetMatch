@@ -11,7 +11,26 @@ const LoginPage = () => {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
   const navigate = useNavigate();
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotError('');
+    try {
+      await authService.forgotPassword(forgotEmail);
+      setForgotSent(true);
+    } catch (err) {
+      setForgotError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,6 +66,7 @@ const LoginPage = () => {
   });
 
   return (
+    <>
     <div
       className="min-h-screen flex items-center justify-center p-4 relative"
       style={{
@@ -117,7 +137,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 className="text-xs text-violet-400 hover:text-violet-300 transition-colors font-medium"
-                onClick={() => {}}
+                onClick={() => { setShowForgot(true); setForgotSent(false); setForgotEmail(''); setForgotError(''); }}
               >
                 Forgot password?
               </button>
@@ -164,6 +184,39 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+      {showForgot && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-white font-bold text-lg mb-2">Reset Password</h3>
+            {forgotSent ? (
+              <>
+                <p className="text-gray-400 text-sm mb-5">If that email is registered, a reset link has been sent. Check your inbox.</p>
+                <button onClick={() => setShowForgot(false)} className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold text-sm transition-all">Close</button>
+              </>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <p className="text-gray-400 text-sm">Enter your email and we'll send you a reset link.</p>
+                {forgotError && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{forgotError}</p>}
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 text-sm"
+                />
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setShowForgot(false)} className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold text-sm transition-all">Cancel</button>
+                  <button type="submit" disabled={forgotLoading} className="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold text-sm transition-all disabled:opacity-50">
+                    {forgotLoading ? 'Sending...' : 'Send Link'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

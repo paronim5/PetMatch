@@ -81,6 +81,31 @@ def mark_match_read(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.delete("/matches/{match_id}", status_code=200)
+def unmatch(
+    match_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: Any = Depends(deps.get_current_active_user),
+) -> Any:
+    """Unmatch (deactivate) a match."""
+    try:
+        messaging_service.unmatch(db, user_id=current_user.id, match_id=match_id)
+        return {"detail": "Unmatched successfully."}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/messages/{message_id}", response_model=Message)
+def delete_message(
+    message_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: Any = Depends(deps.get_current_active_user),
+) -> Any:
+    """Soft-delete own message."""
+    try:
+        return messaging_service.delete_message(db, user_id=current_user.id, message_id=message_id)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
 @router.post("/join", response_model=Match)
 def join_chat_by_code(
     code: str = Body(..., embed=True),
@@ -95,7 +120,7 @@ def join_chat_by_code(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/join-by-username", response_model=Match)
+@router.post("/join-by-username", response_model=MatchWithUsers)
 def join_chat_by_username(
     username: str = Body(..., embed=True),
     db: Session = Depends(deps.get_db),
@@ -104,8 +129,14 @@ def join_chat_by_username(
     """
     Join or create a chat by target user's username.
     """
+    from sqlalchemy.orm import joinedload
+    from app.domain.models import Match as MatchModel, User as UserModel, UserPhoto as UserPhotoModel
     try:
-        return messaging_service.join_chat_by_username(db, user_id=current_user.id, username=username)
+        match = messaging_service.join_chat_by_username(db, user_id=current_user.id, username=username)
+        return db.query(MatchModel).options(
+            joinedload(MatchModel.user1).joinedload(UserModel.photos),
+            joinedload(MatchModel.user2).joinedload(UserModel.photos),
+        ).filter(MatchModel.id == match.id).first()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

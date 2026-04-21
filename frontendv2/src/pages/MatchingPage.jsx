@@ -5,6 +5,7 @@ import { pageBgStyle } from '../components/PageBackground';
 import PretextBio from '../components/PretextBio';
 import BottomNav from '../components/BottomNav';
 import { matchingService } from '../services/matching';
+import { chatService } from '../services/chat';
 import { subscriptionService } from '../services/subscription';
 import { useNotification } from '../context/useNotification';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
@@ -69,6 +70,22 @@ const MatchingPage = () => {
     setShowReportModal(false);
     setCurrentIndex((prev) => prev + 1);
     setPhotoIndex(0);
+  };
+
+  const handleRewind = async () => {
+    if (currentIndex === 0) { addToast('Nothing to rewind.', 'info'); return; }
+    try {
+      await matchingService.rewind();
+      setCurrentIndex(prev => Math.max(0, prev - 1));
+      setPhotoIndex(0);
+      addToast('Rewound!', 'success');
+    } catch (err) {
+      if (err.message && err.message.includes('Premium')) {
+        setShowSubscriptionModal(true);
+      } else {
+        addToast(err.message || 'Could not rewind.', 'error');
+      }
+    }
   };
 
   const handleSwipe = async (direction) => {
@@ -356,7 +373,7 @@ const MatchingPage = () => {
         {/* Action Buttons */}
         <div className="flex items-center justify-center gap-4 mt-5 w-full">
           <button
-            onClick={() => addToast('Rewind is a Premium feature!', 'info')}
+            onClick={handleRewind}
             className="w-12 h-12 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center text-yellow-400 hover:border-yellow-400/50 hover:scale-105 transition-all shadow-lg"
           >
             <FaUndo size={18} />
