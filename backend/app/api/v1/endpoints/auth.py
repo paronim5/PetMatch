@@ -38,7 +38,7 @@ def _send_reset_email(to_email: str, reset_url: str):
     try:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.login(settings.SMTP_USER, (settings.SMTP_PASSWORD or '').strip())
             server.sendmail(msg["From"], [to_email], msg.as_string())
     except Exception as e:
         logger.error(f"Failed to send reset email to {to_email}: {e}")
@@ -114,15 +114,16 @@ def forgot_password(
 ) -> Any:
     """Request a password reset link. Always returns 200 to avoid user enumeration."""
     user = user_repository.get_by_email(db, email=email)
-    if user and user.password_hash:
-        token = create_access_token(
-            data={"sub": user.email, "type": "password_reset"},
-            expires_delta=timedelta(minutes=15)
-        )
-        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-        _send_reset_email(user.email, reset_url)
-        logger.info(f"Password reset requested for {email}. URL: {reset_url}")
-    return {"detail": "If that email is registered, a reset link has been sent."}
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with that email address.")
+    token = create_access_token(
+        data={"sub": user.email, "type": "password_reset"},
+        expires_delta=timedelta(minutes=15)
+    )
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    _send_reset_email(user.email, reset_url)
+    logger.info(f"Password reset requested for {email}. URL: {reset_url}")
+    return {"detail": "Reset link sent! Check your inbox."}
 
 
 @router.post("/reset-password", status_code=200)

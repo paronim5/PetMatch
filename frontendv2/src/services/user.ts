@@ -5,6 +5,10 @@ export const userService = {
     const token = localStorage.getItem('token');
     return api.get('/users/me', token || undefined);
   },
+  updateAccount: async (data: { username?: string; email?: string }) => {
+    const token = localStorage.getItem('token');
+    return api.patch('/users/me/account', data, token || undefined);
+  },
   updateProfile: async (profileData: unknown) => {
     const token = localStorage.getItem('token');
     return api.put('/users/me/profile', profileData, token || undefined);

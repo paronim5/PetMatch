@@ -15,16 +15,18 @@ const LoginPage = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
   const navigate = useNavigate();
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setForgotLoading(true);
+    setForgotError('');
     try {
       await authService.forgotPassword(forgotEmail);
       setForgotSent(true);
-    } catch {
-      setForgotSent(true); // Always show success to prevent user enumeration
+    } catch (err) {
+      setForgotError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setForgotLoading(false);
     }
@@ -135,7 +137,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 className="text-xs text-violet-400 hover:text-violet-300 transition-colors font-medium"
-                onClick={() => { setShowForgot(true); setForgotSent(false); setForgotEmail(''); }}
+                onClick={() => { setShowForgot(true); setForgotSent(false); setForgotEmail(''); setForgotError(''); }}
               >
                 Forgot password?
               </button>
@@ -194,6 +196,7 @@ const LoginPage = () => {
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <p className="text-gray-400 text-sm">Enter your email and we'll send you a reset link.</p>
+                {forgotError && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{forgotError}</p>}
                 <input
                   type="email"
                   value={forgotEmail}

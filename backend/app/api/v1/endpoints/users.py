@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 import shutil
 import os
 import uuid
@@ -153,6 +153,35 @@ def update_user_profile(
 
     logger.info(f"Profile updated successfully for user {current_user.id}")
     return current_user.profile
+
+class AccountUpdateIn(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+
+@router.patch("/me/account")
+def update_account(
+    *,
+    db: Session = Depends(deps.get_db),
+    body: AccountUpdateIn,
+    current_user: Any = Depends(deps.get_current_active_user),
+) -> Any:
+    import re
+    from app.infrastructure.repositories.user import user_repository
+    if body.username is not None:
+        if not re.match(r'^[a-zA-Z0-9_-]{3,30}$', body.username):
+            raise HTTPException(status_code=400, detail="Username must be 3–30 characters: letters, numbers, _ or -.")
+        existing = user_repository.get_by_username(db, username=body.username)
+        if existing and existing.id != current_user.id:
+            raise HTTPException(status_code=400, detail="Username already taken.")
+        current_user.username = body.username
+    if body.email is not None:
+        existing = user_repository.get_by_email(db, email=body.email)
+        if existing and existing.id != current_user.id:
+            raise HTTPException(status_code=400, detail="Email already in use.")
+        current_user.email = body.email
+    db.commit()
+    db.refresh(current_user)
+    return {"username": current_user.username, "email": current_user.email}
 
 # --- PREFERENCES ENDPOINTS (ADDED BACK) ---
 
