@@ -72,7 +72,7 @@ const MobileFloatingBoxes = () => {
               transition: `opacity 0.55s ${i * 0.1}s ease, transform 0.55s ${i * 0.1}s ease`,
             }}
             onClick={() => navigate(box.path)}
-            className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-2xl p-5 cursor-pointer active:scale-95 transition-transform duration-150`}
+            className={`bg-gray-900/80 border ${box.border} backdrop-blur-xl rounded-2xl p-5 cursor-pointer active:scale-95 transition-transform duration-150`}
           >
             <div className="flex items-center gap-3 mb-2">
               <h3 className={`text-base font-black ${box.titleColor}`}>{box.title}</h3>
@@ -168,7 +168,7 @@ const DesktopFloatingBoxes = ({ scrollProgress, fadeOutAt }) => {
               willChange: 'left, top',
             }}
             onClick={() => isInteractive && navigate(box.path)}
-            className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-3xl p-7 cursor-pointer shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200`}
+            className={`bg-gray-900/90 border-2 ${box.border} backdrop-blur-xl rounded-3xl p-7 cursor-pointer shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200`}
           >
             <div className="flex items-center gap-3 mb-3">
               <h3 className={`text-xl font-black ${box.titleColor}`}>{box.title}</h3>

@@ -52,9 +52,9 @@ const LandingPage = () => {
   const unlockTimerRef     = useRef(null);
 
   const messages = [
-    'Find your perfect pet companion.',
-    'Connect with loving animals.',
-    'Make a difference in their lives.',
+    'Connect with people who love pets.',
+    'Swipe. Match. Meet.',
+    'Find someone who gets it.',
   ];
 
   // Debounced resize
@@ -342,9 +342,9 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6">
             {[
-              { value: '10K+', label: 'Happy Matches' },
-              { value: '500+', label: 'Shelters' },
-              { value: '98%',  label: 'Satisfaction' },
+              { value: 'Free', label: 'To Join' },
+              { value: 'Real-Time', label: 'Chat' },
+              { value: 'AI', label: 'Photo Check' },
             ].map((s, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2 sm:p-4">
                 <div className="text-lg sm:text-2xl md:text-3xl font-black text-white">{s.value}</div>
@@ -363,25 +363,24 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-5xl font-black text-white mb-4">
-              The Numbers{' '}
+              Built with{' '}
               <span className="bg-gradient-to-r from-violet-400 to-purple-300 bg-clip-text text-transparent">
-                Speak
+                Purpose
               </span>
             </h2>
             <p className="text-white/50 text-lg max-w-xl mx-auto">
-              Thousands of pet lovers are already finding their perfect match.
+              A full-stack school project by Pavel Kosov — SPŠ Ječná, Prague.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { value: '50K+', label: 'Pet Lovers',  icon: '🐾', sub: 'and growing daily' },
-              { value: '95%',  label: 'Match Rate',  icon: '💘', sub: 'successful connections' },
-              { value: '200+', label: 'Cities',      icon: '📍', sub: 'across the country' },
-              { value: '4.8★', label: 'App Rating',  icon: '⭐', sub: 'from happy users' },
+              { value: 'FastAPI', label: 'Backend',     sub: 'Python async REST API' },
+              { value: 'React',   label: 'Frontend',    sub: 'Vite + Tailwind CSS' },
+              { value: 'PostGIS', label: 'Database',    sub: 'Geospatial matching' },
+              { value: 'Docker',  label: 'Infra',       sub: 'Containerised deploy' },
             ].map((s, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center hover:-translate-y-1 transition-all duration-300">
-                <div className="text-4xl mb-3">{s.icon}</div>
                 <div className="text-3xl md:text-4xl font-black text-white">{s.value}</div>
                 <div className="text-sm font-bold text-white/70 mt-1">{s.label}</div>
                 <div className="text-xs text-white/30 mt-0.5">{s.sub}</div>
@@ -391,9 +390,9 @@ const LandingPage = () => {
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { quote: 'Met my best friend because we both have golden retrievers. PetMatch just gets it.', name: 'Tereza K.', pet: '🐕 Golden Retriever owner' },
-              { quote: "Found someone who loves cats as much as I do. We've been inseparable since day one.", name: 'Martin H.', pet: '🐱 Persian Cat owner' },
-              { quote: 'The location filter is a game changer — we live 5 minutes apart and met at the park!', name: 'Lucie M.', pet: '🐇 Rabbit owner' },
+              { quote: 'Swipe through people nearby who share your passion for animals — not just a profile photo.', name: 'Smart Matching', pet: 'Pet type, age range, distance filters' },
+              { quote: 'Every photo is checked by an AI model before it goes live — no fake or inappropriate content.', name: 'AI Photo Validation', pet: 'MobileNetV2 + ONNX Runtime' },
+              { quote: 'Once you match, talk instantly. No delays — WebSocket chat with read receipts built in.', name: 'Real-Time Chat', pet: 'WebSocket — no refresh needed' },
             ].map((t, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <p className="text-white/70 text-sm leading-relaxed italic mb-4">"{t.quote}"</p>
@@ -424,12 +423,11 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: '🏠', title: 'Find Your Match',   desc: 'Browse thousands of adorable pets waiting for loving homes.',                  accent: 'from-violet-500/20 to-violet-500/5', border: 'border-violet-500/20' },
-              { icon: '❤️', title: 'Safe & Secure',     desc: 'Verified shelters and a responsible, AI-powered adoption process.',             accent: 'from-purple-500/20 to-purple-500/5', border: 'border-purple-500/20' },
-              { icon: '🎉', title: 'Support Network',   desc: 'Connect with experienced pet owners and get expert advice.',                    accent: 'from-indigo-500/20 to-indigo-500/5', border: 'border-indigo-500/20' },
+              { title: 'Pet-Powered Matching',  desc: 'Swipe through profiles filtered by pet type, distance, and age range — every match is intentional.',  accent: 'from-violet-500/20 to-violet-500/5', border: 'border-violet-500/20' },
+              { title: 'AI Photo Validation',   desc: 'Only real pet photos make it through — our AI model rejects human faces and invalid images instantly.', accent: 'from-purple-500/20 to-purple-500/5', border: 'border-purple-500/20' },
+              { title: 'Premium Features',      desc: 'Unlimited swipes, rewind last swipe, and profile boosts — powered by Stripe subscriptions.',            accent: 'from-indigo-500/20 to-indigo-500/5', border: 'border-indigo-500/20' },
             ].map((f, i) => (
               <div key={i} className={`bg-gradient-to-b ${f.accent} border ${f.border} rounded-3xl p-8 hover:-translate-y-1 transition-all duration-300`}>
-                <div className="text-5xl mb-5">{f.icon}</div>
                 <h3 className="text-xl font-bold text-white mb-3">{f.title}</h3>
                 <p className="text-white/50 leading-relaxed">{f.desc}</p>
               </div>
@@ -441,8 +439,8 @@ const LandingPage = () => {
       {/* CTA Banner */}
       <section className="relative z-10 py-16 px-4 bg-gradient-to-r from-violet-700 to-purple-600">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Ready to find your perfect pet?</h2>
-          <p className="text-white/80 text-lg mb-8">Join thousands of happy families who found their match.</p>
+          <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Ready to find your match?</h2>
+          <p className="text-white/80 text-lg mb-8">Create a free account and start swiping in under a minute.</p>
           <button
             onClick={() => navigate('/signup')}
             className="px-10 py-4 bg-white text-violet-700 rounded-2xl text-lg font-black hover:scale-105 transition-transform shadow-xl"
@@ -454,7 +452,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="relative z-10 bg-gray-950 text-white/40 py-10 text-center text-sm">
-        <p>&copy; {new Date().getFullYear()} PetMatch. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} PetMatch — built by Pavel Kosov at SPŠ Ječná, Prague.</p>
       </footer>
     </div>
   );
