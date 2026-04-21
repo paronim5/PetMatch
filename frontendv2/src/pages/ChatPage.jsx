@@ -20,6 +20,7 @@ const ChatPage = () => {
   const [inputText, setInputText] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
+  const currentUserIdRef = useRef(null);
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
@@ -136,6 +137,7 @@ const ChatPage = () => {
       if (res.ok) {
         const user = await res.json();
         setCurrentUserId(user.id);
+        currentUserIdRef.current = user.id;
         return user.id;
       }
     } catch (e) { console.error(e); }
@@ -391,7 +393,8 @@ const ChatPage = () => {
                   </div>
                 )}
                 {messages.map((msg) => {
-                  const isMine = Number(msg.sender_id) === Number(currentUserId);
+                  const uid = currentUserIdRef.current ?? currentUserId;
+                  const isMine = Number(msg.sender_id) === Number(uid);
                   const isDeleted = !!msg.deleted_at;
                   const partner = getPartnerDetails(selectedMatch);
                   return (

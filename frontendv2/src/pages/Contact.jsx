@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 const LINKS = [
   {
-    icon: '💻',
     label: 'GitHub',
     value: 'github.com/paronim5',
     href: 'https://github.com/paronim5',
@@ -12,7 +11,6 @@ const LINKS = [
     bg: 'bg-violet-500/10',
   },
   {
-    icon: '📷',
     label: 'Instagram',
     value: '@paroniim_',
     href: 'https://www.instagram.com/paroniim_',
@@ -21,7 +19,6 @@ const LINKS = [
     bg: 'bg-pink-500/10',
   },
   {
-    icon: '💼',
     label: 'LinkedIn',
     value: 'Pavel Kosov',
     href: 'https://www.linkedin.com/in/pavel-kosov-9242283b3/',
@@ -30,7 +27,6 @@ const LINKS = [
     bg: 'bg-sky-500/10',
   },
   {
-    icon: '🏫',
     label: 'School',
     value: 'SPŠ Ječná, Prague',
     href: 'https://www.spsejecna.cz',
@@ -115,7 +111,6 @@ const Contact = () => {
                   rel="noopener noreferrer"
                   className={`flex items-center gap-4 ${l.bg} border ${l.border} rounded-2xl p-5 hover:-translate-y-0.5 transition-all duration-200 group`}
                 >
-                  <span className="text-3xl">{l.icon}</span>
                   <div>
                     <p className="text-white/40 text-xs font-bold uppercase tracking-widest">{l.label}</p>
                     <p className={`font-semibold ${l.accent} group-hover:underline text-sm mt-0.5`}>{l.value}</p>

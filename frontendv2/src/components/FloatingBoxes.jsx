@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 export const BOXES = [
   {
-    icon: '🎯',
     title: 'Project Goal',
     desc: 'Why PetMatch exists and what we set out to build.',
     path: '/project-goal',
@@ -12,7 +11,6 @@ export const BOXES = [
     titleColor: 'text-rose-400',
   },
   {
-    icon: '⚡',
     title: 'Technology',
     desc: 'The modern stack powering every feature under the hood.',
     path: '/technology',
@@ -21,7 +19,6 @@ export const BOXES = [
     titleColor: 'text-orange-400',
   },
   {
-    icon: '🐾',
     title: 'Features',
     desc: "Everything you can do once you're matched.",
     path: '/features',
@@ -30,7 +27,6 @@ export const BOXES = [
     titleColor: 'text-pink-400',
   },
   {
-    icon: '✉️',
     title: 'Contact',
     desc: 'Questions, ideas or feedback — reach out.',
     path: '/contact',
@@ -79,7 +75,6 @@ const MobileFloatingBoxes = () => {
             className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-2xl p-5 cursor-pointer active:scale-95 transition-transform duration-150`}
           >
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">{box.icon}</span>
               <h3 className={`text-base font-black ${box.titleColor}`}>{box.title}</h3>
             </div>
             <p className="text-white/55 text-sm leading-relaxed">{box.desc}</p>
@@ -176,7 +171,6 @@ const DesktopFloatingBoxes = ({ scrollProgress, fadeOutAt }) => {
             className={`bg-gradient-to-b ${box.accent} border ${box.border} backdrop-blur-xl rounded-3xl p-7 cursor-pointer shadow-2xl hover:scale-105 active:scale-95 transition-transform duration-200`}
           >
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-4xl">{box.icon}</span>
               <h3 className={`text-xl font-black ${box.titleColor}`}>{box.title}</h3>
             </div>
             <p className="text-white/55 text-sm leading-relaxed">{box.desc}</p>
