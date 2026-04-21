@@ -77,7 +77,7 @@ const Technology = () => {
       <div className="fixed top-0 left-0 right-0 z-30 bg-gray-950/80 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => { window.location.href = '/'; }}
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

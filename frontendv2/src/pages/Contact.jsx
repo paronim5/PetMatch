@@ -5,20 +5,29 @@ const LINKS = [
   {
     icon: '💻',
     label: 'GitHub',
-    value: 'github.com/petmatch',
-    href: 'https://github.com',
+    value: 'github.com/paronim5',
+    href: 'https://github.com/paronim5',
     accent: 'text-violet-400',
     border: 'border-violet-500/20',
     bg: 'bg-violet-500/10',
   },
   {
-    icon: '📧',
-    label: 'Email',
-    value: 'support@petmatch.app',
-    href: 'mailto:support@petmatch.app',
-    accent: 'text-rose-400',
-    border: 'border-rose-500/20',
-    bg: 'bg-rose-500/10',
+    icon: '📷',
+    label: 'Instagram',
+    value: '@paroniim_',
+    href: 'https://www.instagram.com/paroniim_',
+    accent: 'text-pink-400',
+    border: 'border-pink-500/20',
+    bg: 'bg-pink-500/10',
+  },
+  {
+    icon: '💼',
+    label: 'LinkedIn',
+    value: 'Pavel Kosov',
+    href: 'https://www.linkedin.com/in/pavel-kosov-9242283b3/',
+    accent: 'text-sky-400',
+    border: 'border-sky-500/20',
+    bg: 'bg-sky-500/10',
   },
   {
     icon: '🏫',
@@ -60,7 +69,7 @@ const Contact = () => {
       <div className="fixed top-0 left-0 right-0 z-30 bg-gray-950/80 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => { window.location.href = '/'; }}
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,8 +126,8 @@ const Contact = () => {
               {/* About */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mt-4">
                 <p className="text-white/50 text-sm leading-relaxed">
-                  PetMatch is a school final project (TP) developed at SPŠ Ječná, Prague.
-                  It is built as a demonstration of full-stack engineering skills and is not a commercial product.
+                  PetMatch is a school final project (TP) developed by <span className="text-white/80 font-semibold">Pavel Kosov</span> at SPŠ Ječná, Prague.
+                  Built as a demonstration of full-stack engineering — not a commercial product.
                 </p>
               </div>
             </div>

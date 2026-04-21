@@ -101,7 +101,7 @@ const ChatPage = () => {
 
   const getPartnerUser = (match) => {
     if (!match || !currentUserId) return null;
-    return match.user1_id === currentUserId ? match.user2 : match.user1;
+    return Number(match.user1_id) === Number(currentUserId) ? match.user2 : match.user1;
   };
 
   const handleBlockReportSuccess = () => {
@@ -237,7 +237,7 @@ const ChatPage = () => {
       sessionStorage.setItem('lastSelectedMatchId', selectedMatch.id.toString());
       fetchMessages(selectedMatch.id);
       markRead(selectedMatch.id);
-      const partnerId = selectedMatch.user1_id === currentUserId ? selectedMatch.user2_id : selectedMatch.user1_id;
+      const partnerId = Number(selectedMatch.user1_id) === Number(currentUserId) ? selectedMatch.user2_id : selectedMatch.user1_id;
       const token = getToken();
       fetch(`${API_URL}/users/${partnerId}/icebreaker-answers`, { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.ok ? r.json() : [])
@@ -391,7 +391,7 @@ const ChatPage = () => {
                   </div>
                 )}
                 {messages.map((msg) => {
-                  const isMine = msg.sender_id === currentUserId;
+                  const isMine = Number(msg.sender_id) === Number(currentUserId);
                   const isDeleted = !!msg.deleted_at;
                   const partner = getPartnerDetails(selectedMatch);
                   return (
