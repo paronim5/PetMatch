@@ -4,9 +4,10 @@ import { API_URL } from '../config';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
 import BottomNav from '../components/BottomNav';
 import { pageBgStyle } from '../components/PageBackground';
+import { chatService } from '../services/chat';
 import {
   FaFlag, FaBan, FaSmile, FaCheck, FaCheckDouble, FaArrowLeft,
-  FaComments, FaHeart, FaUser, FaPaperPlane, FaPaw, FaUserPlus
+  FaComments, FaHeart, FaUser, FaPaperPlane, FaPaw, FaUserPlus, FaTrash, FaHeartBroken
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
@@ -29,8 +30,44 @@ const ChatPage = () => {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
+  const [showUnmatchConfirm, setShowUnmatchConfirm] = useState(false);
+  const [longPressedMessageId, setLongPressedMessageId] = useState(null);
+  const longPressTimer = useRef(null);
 
   const getToken = () => localStorage.getItem('token');
+
+  const handleUnmatch = async () => {
+    if (!selectedMatch) return;
+    try {
+      await chatService.unmatch(selectedMatch.id);
+      setMatches(prev => prev.filter(m => m.id !== selectedMatch.id));
+      setSelectedMatch(null);
+      setMessages([]);
+    } catch (err) {
+      console.error('Unmatch failed:', err);
+    } finally {
+      setShowUnmatchConfirm(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      const updated = await chatService.deleteMessage(messageId);
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, message_text: null, deleted_at: updated.deleted_at } : m));
+    } catch (err) {
+      console.error('Delete message failed:', err);
+    } finally {
+      setLongPressedMessageId(null);
+    }
+  };
+
+  const startLongPress = (messageId) => {
+    longPressTimer.current = setTimeout(() => setLongPressedMessageId(messageId), 500);
+  };
+
+  const cancelLongPress = () => {
+    clearTimeout(longPressTimer.current);
+  };
 
   const handleReact = async (messageId, emoji) => {
     const token = getToken();
@@ -321,6 +358,9 @@ const ChatPage = () => {
                   <button onClick={() => setShowBlockModal(true)} className="text-gray-500 hover:text-red-400 transition-colors p-1">
                     <FaBan size={15} />
                   </button>
+                  <button onClick={() => setShowUnmatchConfirm(true)} className="text-gray-500 hover:text-pink-400 transition-colors p-1" title="Unmatch">
+                    <FaHeartBroken size={15} />
+                  </button>
                 </div>
               </div>
 
@@ -328,11 +368,27 @@ const ChatPage = () => {
               <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollContainerRef} onScroll={handleScroll}>
                 {messages.map((msg) => {
                   const isMine = msg.sender_id === currentUserId;
+                  const isDeleted = !!msg.deleted_at;
                   return (
                     <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                      <div className="relative group max-w-xs lg:max-w-sm">
-                        <div className={`px-4 py-2.5 rounded-2xl ${isMine ? 'bg-violet-600 text-white rounded-br-sm' : 'bg-gray-800 text-gray-100 rounded-bl-sm'}`}>
-                          <p className="text-sm leading-relaxed">{msg.message_text}</p>
+                      <div
+                        className="relative group max-w-xs lg:max-w-sm"
+                        onMouseDown={() => isMine && !isDeleted && startLongPress(msg.id)}
+                        onMouseUp={cancelLongPress}
+                        onMouseLeave={cancelLongPress}
+                        onTouchStart={() => isMine && !isDeleted && startLongPress(msg.id)}
+                        onTouchEnd={cancelLongPress}
+                      >
+                        {longPressedMessageId === msg.id && (
+                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 flex gap-2 z-30 shadow-xl">
+                            <button onClick={() => handleDeleteMessage(msg.id)} className="text-red-400 hover:text-red-300 flex items-center gap-1 text-xs font-medium">
+                              <FaTrash size={12} /> Delete
+                            </button>
+                            <button onClick={() => setLongPressedMessageId(null)} className="text-gray-400 hover:text-gray-300 text-xs">Cancel</button>
+                          </div>
+                        )}
+                        <div className={`px-4 py-2.5 rounded-2xl ${isMine ? 'bg-violet-600 text-white rounded-br-sm' : 'bg-gray-800 text-gray-100 rounded-bl-sm'} ${isDeleted ? 'opacity-50' : ''}`}>
+                          <p className="text-sm leading-relaxed">{isDeleted ? <span className="italic text-gray-400">This message was deleted</span> : msg.message_text}</p>
                           <div className={`flex items-center gap-1 mt-1 text-xs ${isMine ? 'text-violet-200 justify-end' : 'text-gray-500'}`}>
                             <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             {isMine && (
@@ -410,6 +466,19 @@ const ChatPage = () => {
                 blockedUser={getPartnerUser(selectedMatch) || { id: selectedMatch.user1_id === currentUserId ? selectedMatch.user2_id : selectedMatch.user1_id }} />
               <ReportModal show={showReportModal} onClose={() => setShowReportModal(false)} onReport={handleBlockReportSuccess}
                 reportedUser={getPartnerUser(selectedMatch) || { id: selectedMatch.user1_id === currentUserId ? selectedMatch.user2_id : selectedMatch.user1_id }} />
+              {showUnmatchConfirm && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                  <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
+                    <FaHeartBroken className="text-pink-400 text-4xl mx-auto mb-4" />
+                    <h3 className="text-white font-bold text-lg mb-2">Unmatch?</h3>
+                    <p className="text-gray-400 text-sm mb-6">This will remove the match and all messages. This cannot be undone.</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setShowUnmatchConfirm(false)} className="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all text-sm">Cancel</button>
+                      <button onClick={handleUnmatch} className="flex-1 px-4 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded-xl font-semibold transition-all text-sm">Unmatch</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

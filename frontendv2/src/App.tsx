@@ -12,6 +12,7 @@ import ChatPage from './pages/ChatPage';
 import SwipeHistoryPage from './pages/SwipeHistoryPage';
 import BlockHistoryPage from './pages/BlockHistoryPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { NotificationProvider } from './context/NotificationContext';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/complete-profile" element={<CompleteProfilePage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/project-goal" element={<ProjectGoal />} />
           <Route path="/technology" element={<Technology />} />
           <Route path="/features" element={<Features />} />

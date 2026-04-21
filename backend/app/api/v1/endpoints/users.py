@@ -23,9 +23,10 @@ from app.domain.schemas import (
     BlockCreate, ReportCreate, Block, Report, BlockWithUser, ReportWithUser,
 )
 from app.domain.models import (
-    User as UserModel, UserProfile as UserProfileModel, 
+    User as UserModel, UserProfile as UserProfileModel,
     UserPhoto as UserPhotoModel, UserPreferences as UserPreferencesModel,
     Block as BlockModel, Report as ReportModel, PushToken as PushTokenModel,
+    IcebreakerPrompt as IcebreakerPromptModel, UserIcebreakerAnswer as UserIcebreakerAnswerModel,
 )
 from app.services.facade import user_facade
 from app.services.ai_service import ai_service
@@ -474,3 +475,97 @@ async def validate_photo(
     except Exception as e:
         logger.error(f"Error validating photo: {e}")
         raise HTTPException(status_code=500, detail="Failed to validate photo")
+
+
+# --- ICEBREAKER PROMPTS ---
+
+class IcebreakerAnswerIn(BaseModel):
+    prompt_id: int
+    answer_text: str
+    display_order: int = 0
+
+class IcebreakerPromptOut(BaseModel):
+    id: int
+    prompt_text: str
+    category: str | None = None
+    class Config:
+        from_attributes = True
+
+class IcebreakerAnswerOut(BaseModel):
+    id: int
+    prompt_id: int
+    prompt_text: str
+    answer_text: str
+    display_order: int
+    class Config:
+        from_attributes = True
+
+@router.get("/icebreakers", response_model=List[IcebreakerPromptOut])
+def list_icebreaker_prompts(db: Session = Depends(deps.get_db), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
+    """Return all active icebreaker prompts."""
+    prompts = db.query(IcebreakerPromptModel).filter(IcebreakerPromptModel.is_active == True).all()
+    if not prompts:
+        # Seed default prompts on first request if table is empty
+        defaults = [
+            ("My pet's funniest habit is...", "pets"),
+            ("The best thing about having a pet is...", "pets"),
+            ("My pet's name means...", "pets"),
+            ("If my pet could talk, they'd say...", "pets"),
+            ("My pet's favourite spot at home is...", "pets"),
+            ("A typical day with my pet looks like...", "lifestyle"),
+            ("My pet and I bonded over...", "lifestyle"),
+            ("The weirdest thing my pet has ever done is...", "fun"),
+            ("I knew my pet was special when...", "fun"),
+            ("My pet's spirit animal would be...", "fun"),
+            ("The one thing I can't live without is...", "personal"),
+            ("My perfect weekend involves...", "lifestyle"),
+        ]
+        for text, cat in defaults:
+            db.add(IcebreakerPromptModel(prompt_text=text, category=cat))
+        db.commit()
+        prompts = db.query(IcebreakerPromptModel).filter(IcebreakerPromptModel.is_active == True).all()
+    return prompts
+
+@router.get("/me/icebreaker-answers", response_model=List[IcebreakerAnswerOut])
+def get_my_icebreaker_answers(db: Session = Depends(deps.get_db), current_user: Any = Depends(deps.get_current_active_user)) -> Any:
+    """Return the current user's icebreaker answers with prompt text."""
+    answers = db.query(UserIcebreakerAnswerModel, IcebreakerPromptModel).join(
+        IcebreakerPromptModel, UserIcebreakerAnswerModel.prompt_id == IcebreakerPromptModel.id
+    ).filter(UserIcebreakerAnswerModel.user_id == current_user.id).order_by(UserIcebreakerAnswerModel.display_order).all()
+    return [
+        IcebreakerAnswerOut(
+            id=a.id, prompt_id=a.prompt_id, prompt_text=p.prompt_text,
+            answer_text=a.answer_text, display_order=a.display_order
+        )
+        for a, p in answers
+    ]
+
+@router.post("/me/icebreaker-answers", response_model=List[IcebreakerAnswerOut])
+def save_icebreaker_answers(
+    answers_in: List[IcebreakerAnswerIn],
+    db: Session = Depends(deps.get_db),
+    current_user: Any = Depends(deps.get_current_active_user),
+) -> Any:
+    """Save (replace) the current user's icebreaker answers. Max 3."""
+    if len(answers_in) > 3:
+        raise HTTPException(status_code=400, detail="Maximum 3 icebreaker answers allowed.")
+    db.query(UserIcebreakerAnswerModel).filter(UserIcebreakerAnswerModel.user_id == current_user.id).delete()
+    saved = []
+    for i, ans in enumerate(answers_in):
+        prompt = db.query(IcebreakerPromptModel).filter(IcebreakerPromptModel.id == ans.prompt_id).first()
+        if not prompt:
+            raise HTTPException(status_code=404, detail=f"Prompt {ans.prompt_id} not found.")
+        row = UserIcebreakerAnswerModel(
+            user_id=current_user.id, prompt_id=ans.prompt_id,
+            answer_text=ans.answer_text, display_order=i
+        )
+        db.add(row)
+        saved.append((row, prompt))
+    db.commit()
+    return [
+        IcebreakerAnswerOut(
+            id=r.id, prompt_id=r.prompt_id, prompt_text=p.prompt_text,
+            answer_text=r.answer_text, display_order=r.display_order
+        )
+        for r, p in saved
+    ]

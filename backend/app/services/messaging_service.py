@@ -446,4 +446,27 @@ class MessagingService:
         db.commit()
         return True
 
+    def unmatch(self, db: Session, user_id: int, match_id: int) -> None:
+        match = db.query(Match).filter(Match.id == match_id).first()
+        if not match:
+            raise ValueError("Match not found")
+        if match.user1_id != user_id and match.user2_id != user_id:
+            raise ValueError("Unauthorized")
+        match.is_active = False
+        match.unmatched_by = user_id
+        match.unmatched_at = datetime.utcnow()
+        db.commit()
+
+    def delete_message(self, db: Session, user_id: int, message_id: int) -> Message:
+        message = db.query(Message).filter(Message.id == message_id, Message.deleted_at == None).first()
+        if not message:
+            raise ValueError("Message not found")
+        if message.sender_id != user_id:
+            raise ValueError("Cannot delete another user's message")
+        message.deleted_at = datetime.utcnow()
+        message.message_text = None
+        db.commit()
+        db.refresh(message)
+        return message
+
 messaging_service = MessagingService()

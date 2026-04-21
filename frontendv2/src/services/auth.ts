@@ -14,5 +14,11 @@ export const authService = {
   },
   googleLogin: async (code: string) => {
     return api.get(`/auth/google/callback?code=${code}`);
-  }
+  },
+  forgotPassword: async (email: string) => {
+    return api.post('/auth/forgot-password', { email });
+  },
+  resetPassword: async (token: string, new_password: string) => {
+    return api.post('/auth/reset-password', { token, new_password });
+  },
 };

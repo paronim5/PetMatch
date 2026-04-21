@@ -53,6 +53,14 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_PREMIUM: Optional[str] = None
     STRIPE_PRICE_ID_PREMIUM_PLUS: Optional[str] = None
 
+    # Email / SMTP
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM: Optional[str] = None
+    FRONTEND_URL: str = "https://paroniim.xyz"
+
     model_config = SettingsConfigDict(
         case_sensitive=True,
         env_file=".env"

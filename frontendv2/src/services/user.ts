@@ -72,5 +72,17 @@ export const userService = {
   getReports: async () => {
     const token = localStorage.getItem('token');
     return api.get('/users/reports', token || undefined);
-  }
+  },
+  getIcebreakerPrompts: async () => {
+    const token = localStorage.getItem('token');
+    return api.get('/users/icebreakers', token || undefined);
+  },
+  getMyIcebreakerAnswers: async () => {
+    const token = localStorage.getItem('token');
+    return api.get('/users/me/icebreaker-answers', token || undefined);
+  },
+  saveIcebreakerAnswers: async (answers: { prompt_id: number; answer_text: string; display_order: number }[]) => {
+    const token = localStorage.getItem('token');
+    return api.post('/users/me/icebreaker-answers', answers, token || undefined);
+  },
 };

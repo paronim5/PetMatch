@@ -95,6 +95,40 @@ def get_likers(
     
     return users
 
+@router.delete("/swipe/last", status_code=200)
+def rewind_last_swipe(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Undo the last swipe. Premium/Premium+ only.
+    """
+    from app.services.subscription_service import subscription_service as sub_svc
+    limits = sub_svc.get_tier_limits(db, current_user.subscription_tier)
+    if not limits.rewind_enabled:
+        raise HTTPException(status_code=403, detail="Rewind is a Premium feature.")
+
+    last_swipe = db.query(SwipeModel).filter(
+        SwipeModel.swiper_id == current_user.id
+    ).order_by(SwipeModel.created_at.desc()).first()
+
+    if not last_swipe:
+        raise HTTPException(status_code=404, detail="No swipe to rewind.")
+
+    # If a match was created by this swipe, deactivate it
+    match = db.query(Match).filter(
+        ((Match.user1_id == current_user.id) & (Match.user2_id == last_swipe.swiped_id)) |
+        ((Match.user1_id == last_swipe.swiped_id) & (Match.user2_id == current_user.id)),
+        Match.is_active == True
+    ).first()
+    if match:
+        match.is_active = False
+
+    db.delete(last_swipe)
+    db.commit()
+    return {"detail": "Swipe rewound successfully."}
+
+
 @router.post("/swipe", response_model=Swipe)
 def create_swipe(
     *,

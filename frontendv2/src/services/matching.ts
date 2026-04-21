@@ -14,6 +14,11 @@ export const matchingService = {
     }, token || undefined);
   },
 
+  rewind: async () => {
+    const token = localStorage.getItem('token');
+    return api.delete('/matching/swipe/last', token || undefined);
+  },
+
   getLikers: async (swipeType?: 'like' | 'super_like', limit: number = 50) => {
     const token = localStorage.getItem('token');
     const query = new URLSearchParams();

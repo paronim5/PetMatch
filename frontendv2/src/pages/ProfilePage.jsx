@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { userService } from '../services/user';
+import IcebreakerSection from '../components/IcebreakerSection';
 import { subscriptionService } from '../services/subscription';
 import { useNotification } from '../context/useNotification';
 import { validateImage } from '../utils/imageValidation';
@@ -557,6 +558,9 @@ const ProfilePage = () => {
             </div>
           )}
         </div>
+
+        {/* Icebreaker Prompts */}
+        <IcebreakerSection />
 
         {/* Match Preferences */}
         <div className={cardCls}>
