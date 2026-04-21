@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../config';
 import { BlockModal, ReportModal } from '../components/BlockReportModals';
 import BottomNav from '../components/BottomNav';
+import { pageBgStyle } from '../components/PageBackground';
 import {
   FaFlag, FaBan, FaSmile, FaCheck, FaCheckDouble, FaArrowLeft,
   FaComments, FaHeart, FaUser, FaPaperPlane, FaPaw, FaUserPlus
@@ -93,7 +94,11 @@ const ChatPage = () => {
     if (!token) return;
     try {
       const res = await fetch(`${API_URL}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { const user = await res.json(); setCurrentUserId(user.id); }
+      if (res.ok) {
+        const user = await res.json();
+        setCurrentUserId(user.id);
+        return user.id;
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -186,7 +191,7 @@ const ChatPage = () => {
     }, 1000);
   };
 
-  useEffect(() => { fetchCurrentUser(); fetchMatches(); }, []);
+  useEffect(() => { fetchCurrentUser().then(() => fetchMatches()); }, []);
 
   useEffect(() => {
     if (selectedMatch) {
@@ -216,7 +221,7 @@ const ChatPage = () => {
   }, [selectedMatch, isAutoScrollEnabled, currentUserId]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 pb-16">
+    <div className="flex flex-col h-screen pb-16" style={pageBgStyle}>
       {/* Header */}
       <div className="w-full bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-3 flex-shrink-0">
         <FaPaw className="text-violet-400" />

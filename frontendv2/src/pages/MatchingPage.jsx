@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import NotificationBell from '../components/NotificationBell';
+import { pageBgStyle } from '../components/PageBackground';
 import PretextBio from '../components/PretextBio';
 import BottomNav from '../components/BottomNav';
 import { matchingService } from '../services/matching';
@@ -188,7 +189,7 @@ const MatchingPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={pageBgStyle}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-2 border-violet-600/30 border-t-violet-600 rounded-full animate-spin" />
           <p className="text-gray-500 text-sm">Finding your matches...</p>
@@ -199,7 +200,7 @@ const MatchingPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={pageBgStyle}>
         <div className="text-center">
           <p className="text-red-400 mb-4">{error}</p>
           <button onClick={fetchCandidates} className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold transition-all">
@@ -212,7 +213,7 @@ const MatchingPage = () => {
 
   if (candidates.length === 0 || currentIndex >= candidates.length) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col pb-16">
+      <div className="min-h-screen flex flex-col pb-16" style={pageBgStyle}>
         <div className="w-full bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <FaPaw className="text-violet-400" />
@@ -248,7 +249,7 @@ const MatchingPage = () => {
   const likedYou = currentUser.liked_you;
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center pb-16">
+    <div className="min-h-screen flex flex-col items-center pb-16" style={pageBgStyle}>
       {/* Header */}
       <div className="w-full bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">

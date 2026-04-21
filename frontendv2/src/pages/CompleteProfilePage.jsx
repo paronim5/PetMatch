@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../context/useNotification';
 import LocationAutocomplete from '../components/LocationAutocomplete';
+import { pageBgStyle } from '../components/PageBackground';
 import { api } from '../services/api';
 import { userService } from '../services/user';
 import { validateImage } from '../utils/imageValidation';
@@ -252,7 +253,7 @@ const CompleteProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 py-10 px-4">
+    <div className="min-h-screen py-10 px-4" style={pageBgStyle}>
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-violet-600/5 rounded-full blur-3xl" />

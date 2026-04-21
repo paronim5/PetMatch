@@ -5,6 +5,7 @@ import { subscriptionService } from '../services/subscription';
 import { useNotification } from '../context/useNotification';
 import { validateImage } from '../utils/imageValidation';
 import BottomNav from '../components/BottomNav';
+import { pageBgStyle } from '../components/PageBackground';
 import {
   FaTrash, FaPlus, FaCamera, FaMapMarkerAlt,
   FaSignOutAlt, FaUserTimes, FaShieldAlt,
@@ -265,13 +266,13 @@ const ProfilePage = () => {
   const getAge = (dob) => dob ? new Date().getFullYear() - new Date(dob).getFullYear() : null;
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={pageBgStyle}>
       <div className="w-10 h-10 border-2 border-violet-600/30 border-t-violet-600 rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-950 pb-20">
+    <div className="min-h-screen pb-20" style={pageBgStyle}>
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">

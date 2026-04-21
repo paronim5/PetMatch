@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { userService } from '../services/user';
 import { useNotification } from '../context/useNotification';
 import BottomNav from '../components/BottomNav';
+import { pageBgStyle } from '../components/PageBackground';
 import { FaArrowLeft, FaBan, FaUnlock, FaFlag, FaUser } from 'react-icons/fa';
 
 const BlockHistoryPage = () => {
@@ -50,7 +51,7 @@ const BlockHistoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col pb-16">
+    <div className="min-h-screen flex flex-col pb-16" style={pageBgStyle}>
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800 flex items-center gap-3 px-4 py-4">
         <button onClick={() => navigate('/profile')} className="text-gray-400 hover:text-white transition-colors p-1 -ml-1">

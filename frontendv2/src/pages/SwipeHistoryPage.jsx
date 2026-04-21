@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useNotification } from '../context/useNotification';
 import BottomNav from '../components/BottomNav';
+import { pageBgStyle } from '../components/PageBackground';
 import { FaArrowLeft, FaHeart, FaStar, FaSearch } from 'react-icons/fa';
 
 const SwipeHistoryPage = () => {
@@ -93,7 +94,7 @@ const SwipeHistoryPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col pb-16">
+    <div className="min-h-screen flex flex-col pb-16" style={pageBgStyle}>
       {/* Header */}
       <div className="bg-gray-900 border-b border-gray-800 sticky top-0 z-10">
         <div className="flex items-center gap-3 px-4 py-4">
