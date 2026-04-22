@@ -177,7 +177,7 @@ class AIService:
             for cascade in cascades:
                 if cascade.empty():
                     continue
-                detected = cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=3, minSize=(30, 30))
+                detected = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=6, minSize=(40, 40))
                 if len(detected) > 0:
                     logger.info(f"Face detected by cascade. Count: {len(detected)}")
                     return True
@@ -241,7 +241,9 @@ class AIService:
         if is_nsfw:
             quarantine = True
             rejection_reason = nsfw_reason
-        elif has_face:
+        elif has_face and not is_animal:
+            # Only reject for face detection when it's NOT a confirmed animal photo.
+            # Haar cascades fire false positives on pet faces/fur patterns.
             quarantine = True
             rejection_reason = "Human face detected. Please upload a pet-only photo."
             result["is_safe"] = False

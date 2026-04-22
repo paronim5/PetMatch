@@ -215,7 +215,11 @@ const CompleteProfilePage = () => {
     setSubmitStatus('Saving profile...');
     try {
       if (profilePhotoFile && photoValidation.status === 'success') {
-        await userService.uploadPhoto(profilePhotoFile);
+        try {
+          await userService.uploadPhoto(profilePhotoFile);
+        } catch (uploadErr) {
+          if (!uploadErr.message?.toLowerCase().includes('duplicate')) throw uploadErr;
+        }
       }
       const sanitizedLocal = formData.phone_number.replace(/[^0-9]/g, '');
       const phoneE164 = `${formData.phone_country_code}${sanitizedLocal}`;
